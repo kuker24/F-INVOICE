@@ -6,11 +6,10 @@ import { Badge, statusTone } from "@/components/ui/badge";
 import { formatIdr } from "@/lib/money/invoice-math";
 import { PublicPaymentForm } from "@/components/forms/public-payment-form";
 import { OPEN_FOR_PAYMENT } from "@/lib/invoice/status";
-import { makePdfUrl } from "@/lib/pdf/sign";
 import { getPublicEnv } from "@/config/public-env";
 import { invoiceShareText, whatsappShareUrl } from "@/lib/share/whatsapp";
 
-/** ISR — rate-limit di middleware; VIEWED write via after(). */
+/** ISR — rate-limit di middleware; VIEWED write only on cache fill. */
 export const revalidate = 60;
 export const preferredRegion = ["sin1"];
 
@@ -30,11 +29,9 @@ export default async function PublicInvoicePage({
   }
 
   const canPay = OPEN_FOR_PAYMENT.includes(dto.status) && dto.balance_due > 0;
-  const pdfHref = makePdfUrl(
-    getPublicEnv().NEXT_PUBLIC_APP_URL,
-    dto.id,
-    publicToken,
-  );
+  // Static URL (token auth) — no Date.now() so HTML stays ISR-cacheable.
+  const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const pdfHref = `${appUrl}/api/invoices/${dto.id}/pdf?token=${encodeURIComponent(publicToken)}`;
 
   return (
     <div className="min-h-screen bg-canvas px-4 py-10">

@@ -13,65 +13,71 @@ export async function getDashboardStats(profile: Profile) {
   const admin = createAdminClient();
   const open = [...OPEN];
 
-  const [
-    settings,
-    customersRes,
-    openCnt,
-    overdueCnt,
-    openMoney,
-    paidMoney,
-  ] = await Promise.all([
-    ensureBusinessSettings(ownerId),
-    admin
-      .from("customers")
-      .select("id", { count: "exact", head: true })
-      .eq("owner_id", ownerId)
-      .is("deleted_at", null),
-    admin
-      .from("invoices")
-      .select("id", { count: "exact", head: true })
-      .eq("owner_id", ownerId)
-      .is("deleted_at", null)
-      .in("status", open),
-    admin
-      .from("invoices")
-      .select("id", { count: "exact", head: true })
-      .eq("owner_id", ownerId)
-      .is("deleted_at", null)
-      .eq("status", "OVERDUE"),
-    admin
-      .from("invoices")
-      .select("balance_due")
-      .eq("owner_id", ownerId)
-      .is("deleted_at", null)
-      .in("status", open),
-    admin
-      .from("invoices")
-      .select("total_amount")
-      .eq("owner_id", ownerId)
-      .is("deleted_at", null)
-      .eq("status", "PAID"),
-  ]);
+  // Parallel head counts + narrow money cols only (no full invoice rows).
+  const [settings, customersRes, openCnt, overdueCnt, paidCnt, openMoney, paidMoney] =
+    await Promise.all([
+      ensureBusinessSettings(ownerId),
+      admin
+        .from("customers")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", ownerId)
+        .is("deleted_at", null),
+      admin
+        .from("invoices")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", ownerId)
+        .is("deleted_at", null)
+        .in("status", open),
+      admin
+        .from("invoices")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", ownerId)
+        .is("deleted_at", null)
+        .eq("status", "OVERDUE"),
+      admin
+        .from("invoices")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", ownerId)
+        .is("deleted_at", null)
+        .eq("status", "PAID"),
+      admin
+        .from("invoices")
+        .select("balance_due")
+        .eq("owner_id", ownerId)
+        .is("deleted_at", null)
+        .in("status", open),
+      // only when revenue visible — skip PAID sum for Admin without show flag later
+      admin
+        .from("invoices")
+        .select("total_amount")
+        .eq("owner_id", ownerId)
+        .is("deleted_at", null)
+        .eq("status", "PAID"),
+    ]);
 
   let outstanding = 0;
   for (const r of openMoney.data ?? []) {
     outstanding += Number(r.balance_due);
   }
-  let paidSum = 0;
-  for (const r of paidMoney.data ?? []) {
-    paidSum += Number(r.total_amount);
-  }
 
   const showRevenue =
     profile.role === "DEVELOPER" || settings.show_revenue_to_admin;
 
+  let paidSum: number | null = null;
+  if (showRevenue) {
+    paidSum = 0;
+    for (const r of paidMoney.data ?? []) {
+      paidSum += Number(r.total_amount);
+    }
+  }
+
   return {
     customers: customersRes.count ?? 0,
-    invoices: (openCnt.count ?? 0) + (paidMoney.data?.length ?? 0),
+    invoices: (openCnt.count ?? 0) + (paidCnt.count ?? 0),
     openInvoices: openCnt.count ?? 0,
     overdueInvoices: overdueCnt.count ?? 0,
     outstanding,
-    revenue: showRevenue ? paidSum : null,
+    revenue: paidSum,
     showRevenue,
   };
 }

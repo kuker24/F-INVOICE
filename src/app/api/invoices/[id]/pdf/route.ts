@@ -53,18 +53,26 @@ export async function GET(
     }
   }
 
-  // public token match
-  if (!allowed && token) {
+  // Public share: unguessable public_token is enough (no HMAC / Date.now on HTML).
+  if (!allowed && token && token.length >= 32) {
     const admin = createAdminClient();
     const { data: inv } = await admin
       .from("invoices")
-      .select("public_token")
+      .select("public_token,deleted_at,status")
       .eq("id", id)
       .maybeSingle();
-    if (inv && (inv as { public_token: string }).public_token === token) {
-      if (sig && exp && verifyPdfSig({ invoiceId: id, exp, token, sig })) {
-        allowed = true;
-      }
+    const row = inv as {
+      public_token: string;
+      deleted_at: string | null;
+      status: string;
+    } | null;
+    if (
+      row &&
+      !row.deleted_at &&
+      row.status !== "DRAFT" &&
+      row.public_token === token
+    ) {
+      allowed = true;
     }
   }
 

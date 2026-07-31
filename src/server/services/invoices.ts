@@ -501,7 +501,7 @@ async function loadPublicInvoiceUncached(token: string): Promise<CachedPublic> {
   const items = [...(invoice.invoice_items ?? [])].sort(
     (a, b) => (a.position ?? 0) - (b.position ?? 0),
   );
-  return {
+  const cached: CachedPublic = {
     dto: buildPublicDto(
       invoice,
       displayStatus,
@@ -513,23 +513,9 @@ async function loadPublicInvoiceUncached(token: string): Promise<CachedPublic> {
     invoiceId: invoice.id,
     invoiceNumber: invoice.invoice_number,
   };
-}
 
-export async function getPublicInvoiceByToken(
-  token: string,
-): Promise<PublicInvoiceDTO> {
-  if (!token || token.length < 32) {
-    throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
-  }
-
-  const cached = await unstable_cache(
-    () => loadPublicInvoiceUncached(token),
-    ["public-invoice", token],
-    { revalidate: 60, tags: [`public-invoice:${token}`] },
-  )();
-
+  // after() only on cache fill — never on warm hit (keeps HTML ISR / CDN-able).
   if (cached.rawStatus === "SENT") {
-    // Don't block HTML; only runs on cache miss / revalidate path
     after(async () => {
       try {
         const admin = createAdminClient();
@@ -554,6 +540,23 @@ export async function getPublicInvoiceByToken(
       }
     });
   }
+
+  return cached;
+}
+
+export async function getPublicInvoiceByToken(
+  token: string,
+): Promise<PublicInvoiceDTO> {
+  if (!token || token.length < 32) {
+    throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
+  }
+
+  // No after()/cookies here — pure cache read so page can stay revalidate=60.
+  const cached = await unstable_cache(
+    () => loadPublicInvoiceUncached(token),
+    ["public-invoice", token],
+    { revalidate: 60, tags: [`public-invoice:${token}`] },
+  )();
 
   return cached.dto;
 }

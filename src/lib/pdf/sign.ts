@@ -30,6 +30,7 @@ export function verifyPdfSig(parts: {
   }
 }
 
+/** Staff/session links only — public pages use token-only PDF URL (ISR-safe). */
 export function makePdfUrl(appUrl: string, invoiceId: string, token?: string) {
   const exp = Math.floor(Date.now() / 1000) + 300; // 5 min
   const sig = signPdfPayload({ invoiceId, exp, token });

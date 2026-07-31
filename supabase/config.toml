@@ -1,5 +1,6 @@
 # Minimal Supabase CLI project config.
 # Link with: supabase link --project-ref <ref>
+# Push remote auth settings: supabase config push
 
 [project]
 id = "f-invoice"
@@ -12,5 +13,14 @@ major_version = 15
 
 [auth]
 enabled = true
-# Disable public signup in Dashboard: Authentication → Providers → Email
-# (and Auth settings: disable new user signups). App has no signup UI.
+# Invite-only: users created by DEVELOPER (admin API). No public signup UI.
+enable_signup = false
+site_url = "https://f-invoice-orpin.vercel.app"
+additional_redirect_urls = [
+  "https://f-invoice-orpin.vercel.app/**",
+  "http://localhost:3000/**",
+  "http://127.0.0.1:3000/**",
+]
+
+[auth.email]
+enable_signup = false

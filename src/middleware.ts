@@ -3,7 +3,12 @@ import { updateSession } from "@/lib/supabase/middleware";
 import type { AccountStatus, UserRole } from "@/types/database";
 
 const AUTH_PATHS = ["/login", "/forgot-password", "/reset-password"];
-const PUBLIC_PREFIXES = ["/i/", "/api/public/", "/api/cron/"];
+const PUBLIC_PREFIXES = [
+  "/i/",
+  "/api/public/",
+  "/api/cron/",
+  "/api/webhooks/",
+];
 
 function isPublic(pathname: string) {
   if (AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {

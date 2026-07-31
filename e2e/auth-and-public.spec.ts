@@ -10,8 +10,11 @@ test.describe("auth roles", () => {
     await page.getByLabel("Email").fill("developer@finvoice.local");
     await page.locator('input[type="password"]').fill(password);
     await page.getByRole("button", { name: "Masuk" }).click();
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 });
-    await expect(page.getByRole("main")).toContainText(/Dashboard|Halo/i);
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
+    // Hobby cold start can delay first RSC stream past default 5s.
+    await expect(page.getByRole("main")).toContainText(/Dashboard|Halo/i, {
+      timeout: 30_000,
+    });
   });
 
   test("admin login → dashboard", async ({ page }) => {
@@ -19,7 +22,10 @@ test.describe("auth roles", () => {
     await page.getByLabel("Email").fill("admin@finvoice.local");
     await page.locator('input[type="password"]').fill(password);
     await page.getByRole("button", { name: "Masuk" }).click();
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 });
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
+    await expect(page.getByRole("main")).toContainText(/Dashboard|Halo/i, {
+      timeout: 30_000,
+    });
   });
 
   test("customer login → portal", async ({ page }) => {
@@ -27,7 +33,10 @@ test.describe("auth roles", () => {
     await page.getByLabel("Email").fill("customer@finvoice.local");
     await page.locator('input[type="password"]').fill(password);
     await page.getByRole("button", { name: "Masuk" }).click();
-    await expect(page).toHaveURL(/\/portal/, { timeout: 20_000 });
+    await expect(page).toHaveURL(/\/portal/, { timeout: 30_000 });
+    await expect(page.getByRole("main")).toContainText(/Portal|tagihan|notifikasi/i, {
+      timeout: 30_000,
+    });
   });
 
   test("bad password stays on login", async ({ page }) => {

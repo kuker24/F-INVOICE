@@ -6,6 +6,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Badge, statusTone } from "@/components/ui/badge";
 import { formatIdr } from "@/lib/money/invoice-math";
 import { InvoiceActions } from "@/components/invoice/invoice-actions";
+import { InvoiceShareActions } from "@/components/invoice/share-actions";
 import { getPublicEnv } from "@/config/public-env";
 import { AppError } from "@/server/errors";
 import type { InvoiceItem } from "@/types/database";
@@ -26,7 +27,7 @@ export default async function InvoiceDetailPage({
     throw e;
   }
   const items = (inv.invoice_items as InvoiceItem[]) ?? [];
-  const customer = inv.customers as { name?: string } | null;
+  const customer = inv.customers as { name?: string; phone?: string | null } | null;
   const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL;
   const publicUrl = `${appUrl}/i/${inv.public_token}`;
 
@@ -85,9 +86,20 @@ export default async function InvoiceDetailPage({
       {String(inv.status) !== "DRAFT" ? (
         <Card>
           <CardTitle className="mb-2">Link publik</CardTitle>
-          <p className="break-all text-sm">
-            <Link className="underline" href={publicUrl}>{publicUrl}</Link>
+          <p className="mb-3 break-all text-sm">
+            <Link className="underline" href={publicUrl}>
+              {publicUrl}
+            </Link>
           </p>
+          <InvoiceShareActions
+            publicUrl={publicUrl}
+            invoiceNumber={String(inv.invoice_number)}
+            customerName={customer?.name ?? "Pelanggan"}
+            customerPhone={customer?.phone}
+            businessName="F-INVOICE"
+            totalLabel={formatIdr(Number(inv.total_amount))}
+            dueDate={String(inv.due_date ?? "")}
+          />
         </Card>
       ) : null}
     </div>

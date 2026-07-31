@@ -9,9 +9,12 @@
     "lint": "eslint",
     "check:rate-limit": "node src/lib/rate-limit/selfcheck.mjs",
     "check:money": "node src/lib/money/selfcheck.mjs",
-    "check": "pnpm check:money && pnpm check:rate-limit && pnpm lint && pnpm build",
+    "check:share": "node src/lib/share/selfcheck.mjs",
+    "check": "pnpm check:money && pnpm check:rate-limit && pnpm check:share && pnpm lint && pnpm build",
     "seed": "node --env-file=.env.local scripts/seed-dev-users.mjs",
-    "check:smoke": "node --env-file=.env.local scripts/smoke-api.mjs"
+    "check:smoke": "node --env-file=.env.local scripts/smoke-api.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",
@@ -30,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

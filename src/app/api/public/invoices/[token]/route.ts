@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { checkRateLimit, PUBLIC_VIEW_LIMIT } from "@/lib/rate-limit/memory";
+import { checkRateLimit, PUBLIC_VIEW_LIMIT } from "@/lib/rate-limit";
 import { getPublicInvoiceByToken } from "@/server/services/invoices";
 import { AppError } from "@/server/errors";
 
@@ -14,7 +14,7 @@ export async function GET(
     h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     h.get("x-real-ip") ||
     "unknown";
-  const rl = checkRateLimit(
+  const rl = await checkRateLimit(
     `public-inv:${ip}`,
     PUBLIC_VIEW_LIMIT.limit,
     PUBLIC_VIEW_LIMIT.windowMs,

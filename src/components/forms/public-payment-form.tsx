@@ -15,6 +15,11 @@ export function PublicPaymentForm({ token, maxAmount }: { token: string; maxAmou
     setError(null);
     setOk(null);
     const fd = new FormData(e.currentTarget);
+    // Honeypot — bots fill hidden "website"
+    if (String(fd.get("website") || "").trim()) {
+      setOk("Terkirim (PENDING)"); // silent fake success
+      return;
+    }
     const body = {
       amount: Number(fd.get("amount")),
       payment_date: String(fd.get("payment_date")),
@@ -22,6 +27,7 @@ export function PublicPaymentForm({ token, maxAmount }: { token: string; maxAmou
       sender_name: String(fd.get("sender_name") || "") || null,
       reference_number: String(fd.get("reference_number") || "") || null,
       notes: String(fd.get("notes") || "") || null,
+      website: "",
     };
     start(async () => {
       const res = await fetch(`/api/public/invoices/${token}/payment-confirmation`, {
@@ -39,7 +45,23 @@ export function PublicPaymentForm({ token, maxAmount }: { token: string; maxAmou
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-3" autoComplete="off">
+      {/* Honeypot — visually hidden, not display:none so some bots still fill */}
+      <div
+        aria-hidden="true"
+        className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
+        tabIndex={-1}
+      >
+        <label htmlFor="pub-website">Website</label>
+        <input
+          id="pub-website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          defaultValue=""
+        />
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="pub-amount">Jumlah (IDR)</Label>

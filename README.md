@@ -102,9 +102,13 @@ Header: `Authorization: Bearer $CRON_SECRET`.
 | `pnpm lint` | ESLint |
 | `pnpm check:money` | Invoice math golden tests |
 | `pnpm check:rate-limit` | Rate-limit smoke |
+| `pnpm check:share` | WhatsApp URL helper |
 | `pnpm check:smoke` | Auth + schema + buckets (needs `.env.local`) |
-| `pnpm check` | money + rate-limit + lint + build |
+| `pnpm check` | money + rate-limit + share + lint + build |
+| `pnpm test:e2e` | Playwright against `E2E_BASE_URL` (default prod) |
 | `pnpm seed` | Seed dev users + demo customer/product |
+
+Post-MVP prep: `docs/POST-MVP-ROADMAP.md` (gateway env, multi-business path, Upstash).
 
 ## Layering
 

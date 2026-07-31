@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { checkRateLimit, PUBLIC_VIEW_LIMIT } from "@/lib/rate-limit/memory";
+import { checkRateLimit, PUBLIC_VIEW_LIMIT } from "@/lib/rate-limit";
 import { getPublicInvoiceByToken } from "@/server/services/invoices";
 import { AppError } from "@/server/errors";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { PublicPaymentForm } from "@/components/forms/public-payment-form";
 import { OPEN_FOR_PAYMENT } from "@/lib/invoice/status";
 import { makePdfUrl } from "@/lib/pdf/sign";
 import { getPublicEnv } from "@/config/public-env";
+import { invoiceShareText, whatsappShareUrl } from "@/lib/share/whatsapp";
 
 export default async function PublicInvoicePage({
   params,
@@ -22,7 +23,7 @@ export default async function PublicInvoicePage({
     h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     h.get("x-real-ip") ||
     "unknown";
-  const rl = checkRateLimit(
+  const rl = await checkRateLimit(
     `public-page:${ip}`,
     PUBLIC_VIEW_LIMIT.limit,
     PUBLIC_VIEW_LIMIT.windowMs,
@@ -149,17 +150,37 @@ export default async function PublicInvoicePage({
           </Card>
         ) : null}
 
-        {pdfHref ? (
-          <Card className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-mid-gray">Unduh salinan PDF invoice ini.</p>
+        <Card className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-mid-gray">Bagikan atau unduh invoice.</p>
+          <div className="flex flex-wrap gap-2">
             <a
               className="inline-flex h-10 items-center rounded-[18px] border border-hairline bg-paper px-4 text-sm font-medium text-ink hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
-              href={pdfHref}
+              href={whatsappShareUrl(
+                null,
+                invoiceShareText({
+                  businessName: dto.business_name,
+                  invoiceNumber: dto.invoice_number,
+                  customerName: dto.customer_name,
+                  totalLabel: formatIdr(dto.total_amount),
+                  publicUrl: `${getPublicEnv().NEXT_PUBLIC_APP_URL}/i/${publicToken}`,
+                  dueDate: dto.due_date,
+                }),
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Download PDF
+              WhatsApp
             </a>
-          </Card>
-        ) : null}
+            {pdfHref ? (
+              <a
+                className="inline-flex h-10 items-center rounded-[18px] border border-hairline bg-paper px-4 text-sm font-medium text-ink hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+                href={pdfHref}
+              >
+                Download PDF
+              </a>
+            ) : null}
+          </div>
+        </Card>
 
         {canPay ? (
           <Card>

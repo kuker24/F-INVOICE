@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { checkRateLimit, PUBLIC_PAY_LIMIT } from "@/lib/rate-limit/memory";
+import { checkRateLimit, PUBLIC_PAY_LIMIT } from "@/lib/rate-limit";
 import { paymentConfirmSchema } from "@/lib/validation/invoice";
 import { submitPublicPayment } from "@/server/services/payments";
 import { AppError } from "@/server/errors";
@@ -15,7 +15,7 @@ export async function POST(
     h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     h.get("x-real-ip") ||
     "unknown";
-  const rl = checkRateLimit(
+  const rl = await checkRateLimit(
     `public-pay:${ip}:${token.slice(0, 8)}`,
     PUBLIC_PAY_LIMIT.limit,
     PUBLIC_PAY_LIMIT.windowMs,
@@ -33,6 +33,15 @@ export async function POST(
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
+
+  // Honeypot: non-empty website → fake success, no write
+  const raw = body as { website?: unknown };
+  if (typeof raw?.website === "string" && raw.website.trim().length > 0) {
+    return NextResponse.json({
+      data: { id: "ok", payment_number: "PENDING", status: "PENDING" },
+    });
+  }
+
   const parsed = paymentConfirmSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -41,7 +50,9 @@ export async function POST(
     );
   }
   try {
-    const pay = await submitPublicPayment(token, parsed.data);
+    const { website: _hp, ...payload } = parsed.data;
+    void _hp;
+    const pay = await submitPublicPayment(token, payload);
     return NextResponse.json({
       data: { id: pay.id, payment_number: pay.payment_number, status: pay.status },
     });

@@ -53,6 +53,8 @@ export const paymentConfirmSchema = z.object({
   sender_name: z.string().max(120).optional().nullable(),
   reference_number: z.string().max(120).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
+  /** Honeypot — must be empty. Bots fill hidden fields. */
+  website: z.string().max(0).optional().nullable(),
 });
 
 export const subscriptionSchema = z.object({

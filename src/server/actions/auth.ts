@@ -8,7 +8,7 @@ import {
   checkRateLimit,
   LOGIN_LIMIT,
   RESET_LIMIT,
-} from "@/lib/rate-limit/memory";
+} from "@/lib/rate-limit";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -44,7 +44,7 @@ export async function loginAction(
   const { email, password } = parsed.data;
   const h = await headers();
   const ip = clientIp(h);
-  const rl = checkRateLimit(
+  const rl = await checkRateLimit(
     `login:${ip}:${email.toLowerCase()}`,
     LOGIN_LIMIT.limit,
     LOGIN_LIMIT.windowMs,
@@ -143,7 +143,7 @@ export async function forgotPasswordAction(
   const { email } = parsed.data;
   const h = await headers();
   const ip = clientIp(h);
-  const rl = checkRateLimit(
+  const rl = await checkRateLimit(
     `reset:${ip}:${email.toLowerCase()}`,
     RESET_LIMIT.limit,
     RESET_LIMIT.windowMs,

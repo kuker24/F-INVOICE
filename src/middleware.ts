@@ -11,11 +11,6 @@ import {
   HDR_STATUS,
   HDR_UID,
 } from "@/lib/auth/request-identity";
-import {
-  checkRateLimit,
-  PUBLIC_VIEW_LIMIT,
-} from "@/lib/rate-limit";
-
 const AUTH_PATHS = ["/login", "/forgot-password", "/reset-password"];
 /** No session refresh — pure public (saves Supabase getUser RTT every hit). */
 const SKIP_AUTH_PREFIXES = [
@@ -75,29 +70,7 @@ function withIdentity(
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public invoice: edge rate-limit only (no Supabase, no headers() in page)
-  if (pathname.startsWith("/i/")) {
-    const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
-    const rl = await checkRateLimit(
-      `public-page:${ip}`,
-      PUBLIC_VIEW_LIMIT.limit,
-      PUBLIC_VIEW_LIMIT.windowMs,
-    );
-    if (!rl.ok) {
-      return new NextResponse("Terlalu banyak permintaan. Coba lagi nanti.", {
-        status: 429,
-        headers: {
-          "Retry-After": String(rl.retryAfterSec),
-          "Content-Type": "text/plain; charset=utf-8",
-        },
-      });
-    }
-    return NextResponse.next();
-  }
-
+  // /i/ excluded from matcher — never hits middleware (CDN/ISR friendly).
   if (skipAuth(pathname)) {
     return NextResponse.next();
   }
@@ -173,7 +146,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // Skip static assets + public invoice HTML (ISR/CDN; rate-limit on API only).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|i/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

@@ -5,12 +5,14 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Badge, statusTone } from "@/components/ui/badge";
 import { formatIdr } from "@/lib/money/invoice-math";
 import { PublicPaymentForm } from "@/components/forms/public-payment-form";
+import { PublicViewBeacon } from "@/components/invoice/public-view-beacon";
 import { OPEN_FOR_PAYMENT } from "@/lib/invoice/status";
 import { getPublicEnv } from "@/config/public-env";
 import { invoiceShareText, whatsappShareUrl } from "@/lib/share/whatsapp";
 
-/** ISR — rate-limit di middleware; VIEWED write only on cache fill. */
+/** ISR/CDN — no cookies/headers/after in render; VIEWED via client beacon. */
 export const revalidate = 60;
+export const dynamic = "force-static";
 export const preferredRegion = ["sin1"];
 
 export default async function PublicInvoicePage({
@@ -35,6 +37,7 @@ export default async function PublicInvoicePage({
 
   return (
     <div className="min-h-screen bg-canvas px-4 py-10">
+      <PublicViewBeacon token={publicToken} />
       <div className="mx-auto max-w-3xl space-y-4">
         <Card>
           <div className="flex flex-wrap items-start justify-between gap-3">

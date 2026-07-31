@@ -1,6 +1,5 @@
 import "server-only";
 import { randomBytes } from "crypto";
-import { after } from "next/server";
 import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -501,7 +500,7 @@ async function loadPublicInvoiceUncached(token: string): Promise<CachedPublic> {
   const items = [...(invoice.invoice_items ?? [])].sort(
     (a, b) => (a.position ?? 0) - (b.position ?? 0),
   );
-  const cached: CachedPublic = {
+  return {
     dto: buildPublicDto(
       invoice,
       displayStatus,
@@ -513,35 +512,6 @@ async function loadPublicInvoiceUncached(token: string): Promise<CachedPublic> {
     invoiceId: invoice.id,
     invoiceNumber: invoice.invoice_number,
   };
-
-  // after() only on cache fill — never on warm hit (keeps HTML ISR / CDN-able).
-  if (cached.rawStatus === "SENT") {
-    after(async () => {
-      try {
-        const admin = createAdminClient();
-        await admin.rpc("rpc_set_invoice_bypass");
-        await admin
-          .from("invoices")
-          .update({
-            status: "VIEWED",
-            viewed_at: new Date().toISOString(),
-          })
-          .eq("id", cached.invoiceId)
-          .eq("status", "SENT");
-        await logActivity({
-          ownerId: cached.ownerId,
-          action: "invoice.public_view",
-          entityType: "invoice",
-          entityId: cached.invoiceId,
-          description: `Public view ${cached.invoiceNumber}`,
-        });
-      } catch {
-        /* best-effort */
-      }
-    });
-  }
-
-  return cached;
 }
 
 export async function getPublicInvoiceByToken(
@@ -551,7 +521,7 @@ export async function getPublicInvoiceByToken(
     throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
   }
 
-  // No after()/cookies here — pure cache read so page can stay revalidate=60.
+  // Pure cache — VIEWED via client beacon POST /api/public/.../view (ISR-safe).
   const cached = await unstable_cache(
     () => loadPublicInvoiceUncached(token),
     ["public-invoice", token],

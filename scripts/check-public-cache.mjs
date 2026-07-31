@@ -1,9 +1,9 @@
 /**
  * Proves shipped public invoice path stays ISR-safe:
- * - page has revalidate, no makePdfUrl/Date.now
- * - getPublicInvoiceByToken has no after() outside cache fill
- * - after() only inside loadPublicInvoiceUncached
- * - middleware still skips auth on /i/
+ * - page has revalidate, no makePdfUrl/Date.now/after/cookies
+ * - getPublicInvoiceByToken pure unstable_cache
+ * - VIEWED via beacon + API, not render path
+ * - middleware matcher excludes /i/
  * - sin1 regions preserved
  */
 import { readFileSync } from "fs";
@@ -11,6 +11,8 @@ import { join } from "path";
 
 const root = process.cwd();
 const read = (p) => readFileSync(join(root, p), "utf8");
+const stripComments = (s) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
 let fails = 0;
 function ok(cond, msg) {
@@ -22,42 +24,42 @@ function ok(cond, msg) {
 }
 
 const page = read("src/app/i/[publicToken]/page.tsx");
-// strip comments so prose mentioning Date.now does not fail
-const pageCode = page.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+const pageCode = stripComments(page);
 ok(/export const revalidate\s*=\s*60/.test(page), "public page revalidate=60");
 ok(/preferredRegion/.test(page), "public page preferredRegion");
-ok(!/makePdfUrl/.test(pageCode), "public page no makePdfUrl (Date.now leak)");
+ok(!/makePdfUrl/.test(pageCode), "public page no makePdfUrl");
 ok(!/Date\.now\s*\(/.test(pageCode), "public page no Date.now()");
+ok(!/\bafter\s*\(/.test(pageCode), "public page no after()");
+ok(!/cookies\s*\(/.test(pageCode), "public page no cookies()");
+ok(/PublicViewBeacon/.test(page), "public page has VIEWED beacon");
 ok(/pdf\?token=/.test(page) || /token=\$\{/.test(page), "public PDF uses token query");
 ok(/getPublicInvoiceByToken/.test(page), "uses getPublicInvoiceByToken");
 
-const stripComments = (s) =>
-  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 const inv = read("src/server/services/invoices.ts");
 const getStart = inv.indexOf("export async function getPublicInvoiceByToken");
 const afterGet = inv.slice(getStart);
-// next top-level decl only (column 0) — ignore indented const inside body
 const nextTop = afterGet.search(/\n(?:export |async function |function |type )/);
 const getBody =
   nextTop > 0 ? afterGet.slice(0, nextTop) : afterGet.slice(0, 1200);
 const getCode = stripComments(getBody);
-// after should not appear in getPublicInvoiceByToken itself
 ok(!/\bafter\s*\(/.test(getCode), "getPublicInvoiceByToken has no after()");
 ok(/unstable_cache/.test(getCode), "getPublicInvoiceByToken uses unstable_cache");
-ok(/loadPublicInvoiceUncached/.test(inv), "loadPublicInvoiceUncached exists");
-const loadStart = inv.indexOf("async function loadPublicInvoiceUncached");
-const loadEnd = inv.indexOf("export async function getPublicInvoiceByToken");
-const loadBody = stripComments(inv.slice(loadStart, loadEnd));
-ok(/\bafter\s*\(/.test(loadBody), "after() only on cache fill path");
-ok(
-  loadBody.includes("after(") && !getCode.includes("after("),
-  "after only in uncached loader",
-);
+ok(!/\bafter\s*\(/.test(stripComments(inv)), "invoices service no after() at all");
 
 const mw = read("src/middleware.ts");
-ok(/pathname\.startsWith\("\/i\/"\)/.test(mw), "middleware special-cases /i/");
-ok(/SKIP_AUTH_PREFIXES/.test(mw) && mw.includes('"/i/"'), "SKIP_AUTH includes /i/");
-ok(!/updateSession/.test(mw.slice(mw.indexOf('if (pathname.startsWith("/i/")'), mw.indexOf('if (pathname.startsWith("/i/")') + 400)), " /i/ branch no updateSession");
+ok(/matcher:/.test(mw), "middleware has matcher");
+ok(/i\//.test(mw) && /matcher[\s\S]*i\//.test(mw), "matcher excludes i/ path");
+ok(!/checkRateLimit/.test(mw), "middleware no rate-limit import");
+ok(!/PUBLIC_VIEW_LIMIT/.test(mw), "middleware no PUBLIC_VIEW_LIMIT");
+
+const beacon = read("src/components/invoice/public-view-beacon.tsx");
+ok(/sendBeacon|fetch/.test(beacon), "beacon posts view");
+ok(/\/api\/public\/invoices\//.test(beacon), "beacon hits public view API");
+
+const viewApi = read("src/app/api/public/invoices/[token]/view/route.ts");
+ok(/export async function POST/.test(viewApi), "view API is POST");
+ok(/status:\s*["']VIEWED["']|status:\s*"VIEWED"/.test(viewApi), "view API sets VIEWED");
+ok(/checkRateLimit/.test(viewApi), "view API rate-limits");
 
 const vj = read("vercel.json");
 ok(/"sin1"/.test(vj), "vercel regions sin1");

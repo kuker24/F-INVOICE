@@ -46,33 +46,39 @@ pnpm dev
 
 ### Supabase
 
-1. Create **new** cloud project.
-2. Auth → disable public signups (invite-only).
-3. Apply migrations:
+Linked project (this workspace): **`ojdlvrtkmvwsjluwjvny`** (ap-southeast-1).
+
+1. Auth → disable public signups (invite-only) in Dashboard.
+2. Apply migrations:
 
 ```bash
 pnpm exec supabase login
-pnpm exec supabase link --project-ref <ref>
+pnpm exec supabase link --project-ref ojdlvrtkmvwsjluwjvny
 pnpm exec supabase db push
 ```
 
 Or run SQL files in order under `supabase/migrations/`.
 
-4. Seed staff (non-prod):
+**Note:** RLS helper is `public.app_role()` (not `current_role()` — PG keyword clash).
+
+3. Seed staff + demo master (non-prod):
 
 ```bash
 pnpm seed
+pnpm check:smoke
 ```
 
 | Email | Role | Home |
 |-------|------|------|
 | developer@finvoice.local | DEVELOPER | `/dashboard` |
 | admin@finvoice.local | ADMIN | `/dashboard` |
-| customer@finvoice.local | USER | `/portal` (after customer link) |
+| customer@finvoice.local | USER | `/portal` |
 
 Default password: `password123` (`SEED_PASSWORD`).
 
 ### Vercel
+
+Production: **https://f-invoice-orpin.vercel.app** (project `anonim2/f-invoice`).
 
 ```bash
 # set env vars in project settings (all of .env.example)
@@ -96,8 +102,9 @@ Header: `Authorization: Bearer $CRON_SECRET`.
 | `pnpm lint` | ESLint |
 | `pnpm check:money` | Invoice math golden tests |
 | `pnpm check:rate-limit` | Rate-limit smoke |
+| `pnpm check:smoke` | Auth + schema + buckets (needs `.env.local`) |
 | `pnpm check` | money + rate-limit + lint + build |
-| `pnpm seed` | Seed dev users |
+| `pnpm seed` | Seed dev users + demo customer/product |
 
 ## Layering
 

@@ -10,7 +10,8 @@
     "check:rate-limit": "node src/lib/rate-limit/selfcheck.mjs",
     "check:money": "node src/lib/money/selfcheck.mjs",
     "check": "pnpm check:money && pnpm check:rate-limit && pnpm lint && pnpm build",
-    "seed": "node --env-file=.env.local scripts/seed-dev-users.mjs"
+    "seed": "node --env-file=.env.local scripts/seed-dev-users.mjs",
+    "check:smoke": "node --env-file=.env.local scripts/smoke-api.mjs"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",
@@ -35,6 +36,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
+    "postgres": "^3.4.9",
     "supabase": "^2.110.0",
     "tailwindcss": "^4",
     "typescript": "^5",

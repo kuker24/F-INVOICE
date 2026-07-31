@@ -660,7 +660,7 @@ alter table profiles add column owner_id uuid references profiles(id);
 -- DEVELOPER: owner_id is null (self is root)
 -- ADMIN/USER: owner_id = developer root id
 
-create or replace function public.current_role()
+create or replace function public.app_role()
 returns user_role language sql stable security definer set search_path = public as $$
   select role from public.profiles where id = auth.uid();
 $$;
@@ -755,10 +755,10 @@ create policy customers_staff_update on customers for update
 
 -- hard delete: DEVELOPER only
 create policy customers_developer_delete on customers for delete
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 
 create policy customers_user_select on customers for select
-  using (current_role() = 'USER' and id = current_customer_id());
+  using (app_role() = 'USER' and id = current_customer_id());
 
 -- invoices
 create policy invoices_staff_select on invoices for select
@@ -770,9 +770,9 @@ create policy invoices_staff_update on invoices for update
   using (is_staff() and owner_id = current_owner_id());
 -- status/money changes: service role + bypass only (no extra broad policy)
 create policy invoices_developer_delete on invoices for delete
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 create policy invoices_user_select on invoices for select
-  using (current_role() = 'USER' and customer_id = current_customer_id() and deleted_at is null);
+  using (app_role() = 'USER' and customer_id = current_customer_id() and deleted_at is null);
 
 -- payments: no anon policies
 create policy payments_staff_select on payments for select
@@ -781,10 +781,10 @@ create policy payments_staff_insert on payments for insert
   with check (is_staff() and owner_id = current_owner_id());
 -- staff UPDATE policy: omit for MVP; use service role in PaymentService
 create policy payments_user_select on payments for select
-  using (current_role() = 'USER' and customer_id = current_customer_id());
+  using (app_role() = 'USER' and customer_id = current_customer_id());
 create policy payments_user_insert on payments for insert
   with check (
-    current_role() = 'USER'
+    app_role() = 'USER'
     and customer_id = current_customer_id()
     and status = 'PENDING'
     and source = 'portal'
@@ -803,8 +803,8 @@ create policy profiles_select_staff on profiles for select
   using (
     is_staff() and (
       id = auth.uid()
-      or (current_role() = 'DEVELOPER')
-      or (current_role() = 'ADMIN' and role = 'USER' and owner_id = current_owner_id())
+      or (app_role() = 'DEVELOPER')
+      or (app_role() = 'ADMIN' and role = 'USER' and owner_id = current_owner_id())
     )
   );
 -- Admin may list USERs under same owner_id; may not select other ADMINs' secrets beyond basic fields (app projects columns).
@@ -819,10 +819,10 @@ create policy profiles_update_self on profiles for update
 
 -- activity_logs
 create policy activity_logs_developer_select on activity_logs for select
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 create policy activity_logs_admin_select on activity_logs for select
   using (
-    current_role() = 'ADMIN' and owner_id = current_owner_id()
+    app_role() = 'ADMIN' and owner_id = current_owner_id()
     and action not in (
       'settings.business.update',
       'settings.payment_method.update',

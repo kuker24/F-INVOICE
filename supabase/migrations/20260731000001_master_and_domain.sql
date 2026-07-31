@@ -403,9 +403,9 @@ create policy customers_staff_insert on public.customers for insert
 create policy customers_staff_update on public.customers for update
   using (is_staff() and owner_id = current_owner_id());
 create policy customers_developer_delete on public.customers for delete
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 create policy customers_user_select on public.customers for select
-  using (current_role() = 'USER' and id = current_customer_id());
+  using (app_role() = 'USER' and id = current_customer_id());
 
 -- products
 create policy products_staff_select on public.products for select
@@ -415,22 +415,22 @@ create policy products_staff_insert on public.products for insert
 create policy products_staff_update on public.products for update
   using (is_staff() and owner_id = current_owner_id());
 create policy products_developer_delete on public.products for delete
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 
 -- business_settings: staff read; write via service (Developer) — allow developer update
 create policy business_settings_staff_select on public.business_settings for select
   using (is_staff() and owner_id = current_owner_id());
 create policy business_settings_dev_insert on public.business_settings for insert
-  with check (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  with check (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 create policy business_settings_dev_update on public.business_settings for update
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 
 -- payment_methods: staff read; developer write
 create policy payment_methods_staff_select on public.payment_methods for select
   using (is_staff() and owner_id = current_owner_id());
 create policy payment_methods_dev_all on public.payment_methods for all
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id())
-  with check (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id())
+  with check (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 
 -- sequences: staff read only
 create policy invoice_sequences_staff_select on public.invoice_sequences for select
@@ -438,10 +438,10 @@ create policy invoice_sequences_staff_select on public.invoice_sequences for sel
 
 -- activity_logs
 create policy activity_logs_developer_select on public.activity_logs for select
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 create policy activity_logs_admin_select on public.activity_logs for select
   using (
-    current_role() = 'ADMIN' and owner_id = current_owner_id()
+    app_role() = 'ADMIN' and owner_id = current_owner_id()
     and action not in (
       'settings.business.update',
       'settings.payment_method.update',
@@ -463,8 +463,8 @@ create policy notifications_update_own on public.notifications for update
 create policy templates_staff_select on public.invoice_templates for select
   using (is_staff() and owner_id = current_owner_id());
 create policy templates_dev_all on public.invoice_templates for all
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id())
-  with check (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id())
+  with check (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 
 -- subscriptions
 create policy subscriptions_staff_select on public.subscriptions for select
@@ -474,9 +474,9 @@ create policy subscriptions_staff_insert on public.subscriptions for insert
 create policy subscriptions_staff_update on public.subscriptions for update
   using (is_staff() and owner_id = current_owner_id());
 create policy subscriptions_developer_delete on public.subscriptions for delete
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 create policy subscriptions_user_select on public.subscriptions for select
-  using (current_role() = 'USER' and customer_id = current_customer_id());
+  using (app_role() = 'USER' and customer_id = current_customer_id());
 
 -- invoices
 create policy invoices_staff_select on public.invoices for select
@@ -486,10 +486,10 @@ create policy invoices_staff_insert on public.invoices for insert
 create policy invoices_staff_update on public.invoices for update
   using (is_staff() and owner_id = current_owner_id());
 create policy invoices_developer_delete on public.invoices for delete
-  using (current_role() = 'DEVELOPER' and owner_id = current_owner_id());
+  using (app_role() = 'DEVELOPER' and owner_id = current_owner_id());
 create policy invoices_user_select on public.invoices for select
   using (
-    current_role() = 'USER'
+    app_role() = 'USER'
     and customer_id = current_customer_id()
     and deleted_at is null
   );
@@ -520,7 +520,7 @@ create policy invoice_items_user_select on public.invoice_items for select
     exists (
       select 1 from public.invoices i
       where i.id = invoice_id
-        and current_role() = 'USER'
+        and app_role() = 'USER'
         and i.customer_id = current_customer_id()
         and i.deleted_at is null
     )
@@ -532,10 +532,10 @@ create policy payments_staff_select on public.payments for select
 create policy payments_staff_insert on public.payments for insert
   with check (is_staff() and owner_id = current_owner_id());
 create policy payments_user_select on public.payments for select
-  using (current_role() = 'USER' and customer_id = current_customer_id());
+  using (app_role() = 'USER' and customer_id = current_customer_id());
 create policy payments_user_insert on public.payments for insert
   with check (
-    current_role() = 'USER'
+    app_role() = 'USER'
     and customer_id = current_customer_id()
     and status = 'PENDING'
     and source = 'portal'
@@ -567,7 +567,7 @@ create policy business_assets_staff_select on storage.objects for select
 create policy business_assets_dev_write on storage.objects for insert
   with check (
     bucket_id = 'business-assets'
-    and current_role() = 'DEVELOPER'
+    and app_role() = 'DEVELOPER'
     and (storage.foldername(name))[1] = current_owner_id()::text
   );
 
@@ -580,7 +580,7 @@ create policy payment_proofs_staff_select on storage.objects for select
 create policy payment_proofs_user_select on storage.objects for select
   using (
     bucket_id = 'payment-proofs'
-    and current_role() = 'USER'
+    and app_role() = 'USER'
     and exists (
       select 1 from public.invoices i
       where i.customer_id = current_customer_id()
@@ -590,7 +590,7 @@ create policy payment_proofs_user_select on storage.objects for select
 create policy payment_proofs_user_insert on storage.objects for insert
   with check (
     bucket_id = 'payment-proofs'
-    and current_role() = 'USER'
+    and app_role() = 'USER'
     and exists (
       select 1 from public.invoices i
       where i.customer_id = current_customer_id()

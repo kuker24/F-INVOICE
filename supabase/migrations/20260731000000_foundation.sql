@@ -78,7 +78,7 @@ create trigger profiles_set_updated_at
   for each row execute function public.set_updated_at();
 
 -- RLS helpers
-create or replace function public.current_role()
+create or replace function public.app_role()
 returns public.user_role
 language sql
 stable

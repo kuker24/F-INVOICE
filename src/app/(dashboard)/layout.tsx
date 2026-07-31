@@ -16,10 +16,8 @@ export default async function DashboardLayout({
   const items = navForRole(session.profile.role);
 
   return (
-    <div className="flex min-h-screen bg-canvas">
-      <div className="hidden md:block">
-        <AppSidebar items={items} />
-      </div>
+    <div className="flex min-h-screen flex-col bg-canvas md:flex-row">
+      <AppSidebar items={items} />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader profile={session.profile} />
         <main className="flex-1 p-4 md:p-6">{children}</main>

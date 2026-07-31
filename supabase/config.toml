@@ -1,0 +1,16 @@
+# Minimal Supabase CLI project config.
+# Link with: supabase link --project-ref <ref>
+
+[project]
+id = "f-invoice"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15
+
+[auth]
+enabled = true
+# Disable public signup in Dashboard: Authentication → Providers → Email
+# (and Auth settings: disable new user signups). App has no signup UI.

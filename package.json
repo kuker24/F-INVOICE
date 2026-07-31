@@ -1,0 +1,43 @@
+{
+  "name": "f-invoice",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "check:rate-limit": "node src/lib/rate-limit/selfcheck.mjs",
+    "check:money": "node src/lib/money/selfcheck.mjs",
+    "check": "pnpm check:money && pnpm check:rate-limit && pnpm lint && pnpm build",
+    "seed": "node --env-file=.env.local scripts/seed-dev-users.mjs"
+  },
+  "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.111.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.28.0",
+    "next": "15.5.9",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "server-only": "^0.0.1",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.2",
+    "supabase": "^2.110.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vercel": "^58.4.4"
+  }
+}

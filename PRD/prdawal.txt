@@ -1,0 +1,2937 @@
+# PRODUCT REQUIREMENTS DOCUMENT
+
+## F-INVOICE
+
+**Versi:** 1.0 MVP
+**Jenis aplikasi:** Private Invoice Management System
+**Platform awal:** Web responsif
+**Pemilik sistem:** Developer/Owner
+**Target pengguna:** Developer, Admin internal, dan pelanggan aplikasi
+**Status:** Siap dikembangkan
+
+---
+
+# 1. Ringkasan Produk
+
+F-INVOICE adalah aplikasi web private untuk mengelola invoice penjualan project, biaya maintenance, hosting, langganan aplikasi, dan pembayaran pelanggan.
+
+Aplikasi hanya digunakan oleh:
+
+1. **Developer**
+
+   * Pemilik aplikasi.
+   * Memiliki kendali penuh terhadap seluruh sistem.
+
+2. **Admin**
+
+   * Membantu mengelola pelanggan, invoice, langganan, dan pembayaran.
+   * Tidak dapat mengubah pengaturan penting sistem.
+
+3. **User**
+
+   * Pelanggan yang membeli project atau berlangganan aplikasi.
+   * Hanya dapat melihat data miliknya sendiri.
+
+F-INVOICE bukan marketplace dan bukan SaaS publik. Registrasi umum tidak tersedia. Semua akun dibuat atau diundang oleh Developer.
+
+---
+
+# 2. Tujuan Produk
+
+F-INVOICE harus memungkinkan Developer untuk:
+
+* Menyimpan data pelanggan.
+* Menyimpan daftar layanan dan produk.
+* Membuat invoice secara cepat.
+* Membuat invoice langganan berkala.
+* Menghasilkan invoice dalam format PDF.
+* Membagikan invoice kepada pelanggan.
+* Memantau invoice yang belum dibayar.
+* Mencatat pembayaran pelanggan.
+* Mengelola akun Admin dan User.
+* Melihat histori aktivitas sistem.
+* Mengatur identitas bisnis dan rekening pembayaran.
+
+---
+
+# 3. Ruang Lingkup MVP
+
+Fitur yang wajib tersedia pada versi pertama:
+
+* Authentication.
+* Role-based access control.
+* Dashboard.
+* Manajemen pelanggan.
+* Manajemen akun pengguna.
+* Manajemen produk dan layanan.
+* Manajemen invoice.
+* Manajemen langganan.
+* Pencatatan pembayaran.
+* Konfirmasi pembayaran pelanggan.
+* Upload bukti pembayaran.
+* Generate PDF invoice.
+* Template invoice.
+* Link invoice publik.
+* Pengaturan identitas bisnis.
+* Pengaturan rekening pembayaran.
+* Activity log.
+* Responsive mobile dan desktop.
+
+---
+
+# 4. Fitur di Luar Scope MVP
+
+Fitur berikut tidak perlu dibuat pada versi pertama:
+
+* Registrasi publik.
+* Payment gateway otomatis.
+* Integrasi WhatsApp API.
+* Integrasi accounting.
+* Multi-business.
+* Multi-currency kompleks.
+* Sistem perpajakan otomatis.
+* Chat antara pelanggan dan admin.
+* Mobile application Android/iOS.
+* Marketplace template.
+* Pembuatan faktur pajak.
+* Integrasi e-meterai.
+* Sinkronisasi bank otomatis.
+
+Fitur tersebut dapat dikembangkan setelah MVP stabil.
+
+---
+
+# 5. Teknologi yang Digunakan
+
+## 5.1 Frontend
+
+* Next.js App Router.
+* TypeScript.
+* Tailwind CSS.
+* shadcn/ui.
+* React Hook Form.
+* Zod.
+* TanStack Table jika dibutuhkan.
+* Recharts untuk grafik dashboard.
+* Lucide Icons.
+* Sonner untuk toast notification.
+
+## 5.2 Backend
+
+* Next.js Server Actions atau Route Handlers.
+* Supabase PostgreSQL.
+* Supabase Authentication.
+* Supabase Storage.
+* Supabase Row Level Security.
+* Vercel untuk deployment.
+* Vercel Cron untuk proses invoice langganan.
+* React PDF atau HTML-to-PDF untuk invoice PDF.
+
+## 5.3 Prinsip Arsitektur
+
+* Frontend tidak boleh langsung melakukan operasi sensitif.
+* Perhitungan invoice dilakukan ulang di server.
+* Service role Supabase hanya digunakan di server.
+* Seluruh data utama memiliki `owner_id`.
+* Seluruh request harus melalui validasi Zod.
+* Hak akses harus diperiksa di frontend, backend, dan database.
+
+---
+
+# 6. Role dan Hak Akses
+
+## 6.1 Developer
+
+Developer merupakan pemilik sistem dan memiliki full control.
+
+Developer dapat:
+
+* Melihat seluruh dashboard.
+* Membuat, mengedit, dan menghapus pelanggan.
+* Membuat, mengedit, membatalkan, dan menghapus invoice.
+* Membuat dan mengelola langganan.
+* Mencatat dan membatalkan pembayaran.
+* Mengelola produk dan layanan.
+* Mengelola Admin.
+* Mengelola akun User.
+* Mengubah role pengguna.
+* Mengaktifkan dan menonaktifkan akun.
+* Mengatur identitas bisnis.
+* Mengatur rekening pembayaran.
+* Mengatur template invoice.
+* Melihat seluruh activity log.
+* Menjalankan generate invoice langganan secara manual.
+* Mengubah status invoice.
+* Mengakses seluruh data sistem.
+* Menghapus data permanen.
+
+Dalam MVP hanya boleh ada satu akun Developer utama.
+
+## 6.2 Admin
+
+Admin adalah staf internal dengan hak akses terbatas.
+
+Admin dapat:
+
+* Melihat dashboard operasional.
+* Melihat pelanggan.
+* Menambahkan pelanggan.
+* Mengedit pelanggan.
+* Melihat produk dan layanan.
+* Menambahkan produk dan layanan.
+* Mengedit produk dan layanan.
+* Membuat invoice.
+* Mengedit invoice berstatus Draft.
+* Mengirim invoice.
+* Mencatat pembayaran.
+* Memverifikasi bukti pembayaran.
+* Membuat dan mengelola langganan.
+* Melihat akun User.
+* Mengunduh PDF invoice.
+* Melihat activity log yang berkaitan dengan operasional.
+
+Admin tidak dapat:
+
+* Menghapus Developer.
+* Membuat Developer baru.
+* Mengubah role menjadi Developer.
+* Menghapus invoice secara permanen.
+* Menghapus pembayaran secara permanen.
+* Mengubah identitas bisnis.
+* Mengubah rekening utama.
+* Mengubah environment atau konfigurasi sistem.
+* Menghapus activity log.
+* Melihat secret key.
+* Mengubah permission role.
+* Menonaktifkan akun Developer.
+
+## 6.3 User
+
+User adalah pelanggan.
+
+User hanya dapat:
+
+* Login ke portal pelanggan.
+* Melihat dashboard miliknya.
+* Melihat invoice miliknya.
+* Melihat detail invoice miliknya.
+* Mengunduh PDF invoice miliknya.
+* Melihat status pembayaran.
+* Melihat langganan miliknya.
+* Melihat riwayat pembayaran miliknya.
+* Mengunggah bukti pembayaran.
+* Mengirim konfirmasi pembayaran.
+* Mengubah profil dasar.
+* Mengubah password.
+
+User tidak dapat:
+
+* Melihat pelanggan lain.
+* Melihat invoice pelanggan lain.
+* Mengubah nominal invoice.
+* Mengubah status invoice.
+* Membuat invoice.
+* Menghapus invoice.
+* Melihat dashboard pendapatan.
+* Melihat data rekening internal selain yang ditampilkan pada invoice.
+* Mengakses halaman Admin atau Developer.
+
+---
+
+# 7. Matriks Hak Akses
+
+| Modul                |  Developer |                 Admin |               User |
+| -------------------- | ---------: | --------------------: | -----------------: |
+| Dashboard bisnis     |      Penuh |              Terbatas |              Tidak |
+| Dashboard pelanggan  |         Ya |                    Ya |      Milik sendiri |
+| Pelanggan            |       CRUD |  Create, Read, Update |     Profil sendiri |
+| Produk/layanan       |       CRUD |  Create, Read, Update |              Tidak |
+| Invoice              | CRUD penuh |           Operasional | Read milik sendiri |
+| Langganan            | CRUD penuh |           Operasional | Read milik sendiri |
+| Pembayaran           | CRUD penuh | Create dan verifikasi |   Kirim konfirmasi |
+| PDF invoice          |      Semua |         Semua invoice |      Milik sendiri |
+| User management      |      Penuh |         Read terbatas |     Profil sendiri |
+| Admin management     |      Penuh |                 Tidak |              Tidak |
+| Business settings    |      Penuh |                  Read |              Tidak |
+| Rekening pembayaran  |      Penuh |                  Read |    Melalui invoice |
+| Template invoice     |      Penuh |                  Read |              Tidak |
+| Activity log         |      Semua |           Operasional |              Tidak |
+| Penghapusan permanen |         Ya |                 Tidak |              Tidak |
+
+---
+
+# 8. Status Data Utama
+
+## 8.1 Status Invoice
+
+* `DRAFT`
+* `SENT`
+* `VIEWED`
+* `PARTIALLY_PAID`
+* `PAID`
+* `OVERDUE`
+* `CANCELLED`
+
+## 8.2 Status Langganan
+
+* `ACTIVE`
+* `PAUSED`
+* `CANCELLED`
+* `EXPIRED`
+
+## 8.3 Status Pembayaran
+
+* `PENDING`
+* `VERIFIED`
+* `REJECTED`
+* `CANCELLED`
+
+## 8.4 Status Akun
+
+* `ACTIVE`
+* `INACTIVE`
+* `SUSPENDED`
+* `INVITED`
+
+---
+
+# 9. Struktur Navigasi
+
+## 9.1 Menu Developer
+
+Sidebar Developer:
+
+1. Dashboard
+2. Pelanggan
+3. Invoice
+4. Langganan
+5. Pembayaran
+6. Produk & Layanan
+7. Pengguna
+8. Template Invoice
+9. Activity Log
+10. Pengaturan
+
+Bagian bawah sidebar:
+
+* Profil Saya
+* Ganti Password
+* Keluar
+
+## 9.2 Menu Admin
+
+Sidebar Admin:
+
+1. Dashboard
+2. Pelanggan
+3. Invoice
+4. Langganan
+5. Pembayaran
+6. Produk & Layanan
+7. Pengguna
+8. Activity Log
+
+Bagian bawah sidebar:
+
+* Profil Saya
+* Ganti Password
+* Keluar
+
+## 9.3 Menu User
+
+Sidebar User:
+
+1. Dashboard
+2. Invoice Saya
+3. Langganan Saya
+4. Pembayaran Saya
+5. Profil Saya
+
+Bagian bawah sidebar:
+
+* Ganti Password
+* Keluar
+
+---
+
+# 10. FRONTEND REQUIREMENTS
+
+# 10.1 Halaman Login
+
+## URL
+
+```text
+/login
+```
+
+## Komponen
+
+* Logo F-INVOICE.
+* Judul “Masuk ke F-INVOICE”.
+* Input email.
+* Input password.
+* Checkbox “Ingat saya”.
+* Tombol tampilkan/sembunyikan password.
+* Tombol “Masuk”.
+* Link “Lupa password”.
+* Informasi bahwa akun dibuat oleh Developer.
+
+## Tombol
+
+### Masuk
+
+Fungsi:
+
+* Memvalidasi email dan password.
+* Mengirim permintaan login.
+* Mengarahkan pengguna berdasarkan role.
+
+Redirect:
+
+* Developer → `/dashboard`
+* Admin → `/dashboard`
+* User → `/portal`
+
+### Lupa Password
+
+Mengarahkan ke:
+
+```text
+/forgot-password
+```
+
+## Validasi
+
+* Email wajib diisi.
+* Email harus valid.
+* Password minimal 8 karakter.
+* Tampilkan pesan jika akun tidak aktif.
+* Tampilkan pesan jika email atau password salah.
+* Gunakan loading state saat proses login.
+* Tombol tidak dapat diklik berulang kali saat loading.
+
+---
+
+# 10.2 Halaman Lupa Password
+
+## URL
+
+```text
+/forgot-password
+```
+
+## Komponen
+
+* Input email.
+* Tombol “Kirim Tautan Reset”.
+* Link kembali ke login.
+
+## Proses
+
+* Sistem mengirim email reset password melalui Supabase Auth.
+* Sistem tidak boleh mengungkap apakah email terdaftar atau tidak.
+
+Pesan umum:
+
+```text
+Jika email terdaftar, tautan reset password akan dikirim.
+```
+
+---
+
+# 10.3 Layout Dashboard
+
+## Header
+
+Berisi:
+
+* Tombol buka/tutup sidebar.
+* Breadcrumb.
+* Search global.
+* Icon notifikasi.
+* Avatar pengguna.
+* Dropdown profil.
+
+## Dropdown Profil
+
+Menu:
+
+* Profil Saya.
+* Ganti Password.
+* Keluar.
+
+## Sidebar
+
+* Desktop: sidebar permanen.
+* Mobile: drawer.
+* Menu aktif harus memiliki indikator.
+* Menu yang tidak memiliki permission tidak boleh ditampilkan.
+
+---
+
+# 10.4 Dashboard Developer
+
+## URL
+
+```text
+/dashboard
+```
+
+## Ringkasan Statistik
+
+Tampilkan kartu:
+
+1. Total Pendapatan.
+2. Pendapatan Bulan Ini.
+3. Invoice Belum Dibayar.
+4. Invoice Jatuh Tempo.
+5. Pelanggan Aktif.
+6. Langganan Aktif.
+
+## Grafik
+
+Grafik pendapatan 6 atau 12 bulan.
+
+Filter:
+
+* 6 Bulan.
+* 12 Bulan.
+* Tahun Ini.
+
+## Tabel Invoice Terbaru
+
+Kolom:
+
+* Nomor Invoice.
+* Pelanggan.
+* Tanggal.
+* Jatuh Tempo.
+* Total.
+* Status.
+* Aksi.
+
+## Aksi Cepat
+
+Tombol:
+
+* Buat Invoice.
+* Tambah Pelanggan.
+* Tambah Langganan.
+* Catat Pembayaran.
+
+## Invoice Perlu Perhatian
+
+Tampilkan:
+
+* Invoice overdue.
+* Konfirmasi pembayaran pending.
+* Langganan yang akan ditagih.
+* Akun undangan yang belum aktif.
+
+---
+
+# 10.5 Dashboard Admin
+
+Admin melihat:
+
+* Invoice belum dibayar.
+* Invoice overdue.
+* Pembayaran menunggu verifikasi.
+* Langganan aktif.
+* Invoice terbaru.
+* Pelanggan terbaru.
+
+Admin tidak melihat:
+
+* Total seluruh pendapatan jika Developer menonaktifkannya.
+* Pengaturan bisnis sensitif.
+* Konfigurasi sistem.
+
+---
+
+# 10.6 Dashboard User
+
+## URL
+
+```text
+/portal
+```
+
+## Kartu Ringkasan
+
+* Total tagihan belum dibayar.
+* Invoice aktif.
+* Langganan aktif.
+* Pembayaran terakhir.
+
+## Daftar Tagihan Terbaru
+
+Kolom:
+
+* Nomor invoice.
+* Tanggal.
+* Jatuh tempo.
+* Total.
+* Status.
+* Tombol “Lihat”.
+
+## Tombol Utama
+
+* Lihat Invoice.
+* Konfirmasi Pembayaran.
+* Unduh Invoice Terbaru.
+
+---
+
+# 10.7 Halaman Pelanggan
+
+## URL
+
+```text
+/customers
+```
+
+## Komponen
+
+* Judul halaman.
+* Tombol “Tambah Pelanggan”.
+* Search pelanggan.
+* Filter status.
+* Filter jenis pelanggan.
+* Tombol refresh.
+* Tabel pelanggan.
+* Pagination.
+
+## Kolom Tabel
+
+* Nama.
+* Perusahaan.
+* Email.
+* Nomor WhatsApp.
+* Jumlah invoice.
+* Langganan aktif.
+* Total tagihan.
+* Status.
+* Aksi.
+
+## Menu Aksi Per Baris
+
+* Lihat Detail.
+* Edit.
+* Buat Invoice.
+* Buat Langganan.
+* Buat Akun User.
+* Nonaktifkan.
+* Hapus.
+
+Admin tidak melihat tombol Hapus Permanen.
+
+## Empty State
+
+Pesan:
+
+```text
+Belum ada pelanggan.
+Tambahkan pelanggan pertama untuk mulai membuat invoice.
+```
+
+Tombol:
+
+```text
+Tambah Pelanggan
+```
+
+---
+
+# 10.8 Form Tambah Pelanggan
+
+## URL
+
+```text
+/customers/new
+```
+
+## Field
+
+### Informasi Utama
+
+* Nama pelanggan.
+* Nama perusahaan.
+* Email.
+* Nomor WhatsApp.
+* Nomor telepon alternatif.
+* Jenis pelanggan:
+
+  * Individu.
+  * Perusahaan.
+  * Sekolah/instansi.
+
+### Informasi Alamat
+
+* Alamat.
+* Kota/kabupaten.
+* Provinsi.
+* Kode pos.
+
+### Informasi Administratif
+
+* NPWP opsional.
+* Nama aplikasi/project.
+* Catatan internal.
+* Status pelanggan.
+
+### Akun Portal
+
+Checkbox:
+
+```text
+Buat akun portal pelanggan
+```
+
+Jika aktif:
+
+* Email login.
+* Kirim undangan akun.
+* User mengganti password melalui tautan undangan.
+
+## Tombol
+
+* Simpan Pelanggan.
+* Simpan dan Buat Invoice.
+* Batal.
+
+## Validasi
+
+* Nama wajib.
+* Email harus valid jika diisi.
+* Email akun harus unik.
+* Nomor WhatsApp dinormalisasi.
+* Nama perusahaan wajib untuk tipe perusahaan.
+* Tidak boleh membuat dua akun dengan email sama.
+
+---
+
+# 10.9 Detail Pelanggan
+
+## URL
+
+```text
+/customers/[id]
+```
+
+## Header
+
+Tampilkan:
+
+* Nama pelanggan.
+* Perusahaan.
+* Status.
+* Email.
+* WhatsApp.
+* Tombol Edit.
+* Tombol Buat Invoice.
+* Tombol Buat Langganan.
+* Dropdown aksi lainnya.
+
+## Tab
+
+### Ringkasan
+
+* Total invoice.
+* Total pembayaran.
+* Tagihan aktif.
+* Langganan aktif.
+* Informasi kontak.
+* Catatan internal.
+
+### Invoice
+
+Daftar invoice pelanggan.
+
+### Langganan
+
+Daftar langganan pelanggan.
+
+### Pembayaran
+
+Riwayat pembayaran pelanggan.
+
+### Aktivitas
+
+Riwayat perubahan data pelanggan.
+
+## Dropdown Aksi
+
+* Edit Pelanggan.
+* Aktifkan/Nonaktifkan.
+* Buat Akun Portal.
+* Reset Password User.
+* Hapus Pelanggan.
+
+Sebelum menghapus pelanggan, sistem harus memeriksa apakah pelanggan memiliki invoice atau pembayaran.
+
+Jika memiliki transaksi, gunakan soft delete atau nonaktifkan.
+
+---
+
+# 10.10 Produk dan Layanan
+
+## URL
+
+```text
+/products
+```
+
+## Fungsi
+
+Menyimpan item yang sering dimasukkan ke invoice.
+
+Contoh:
+
+* Pembuatan Website.
+* Aplikasi Absensi.
+* Biaya Setup.
+* Maintenance Bulanan.
+* Hosting Tahunan.
+* Custom Feature.
+* Pelatihan Pengguna.
+
+## Field Produk
+
+* Nama.
+* Kode produk.
+* Deskripsi.
+* Kategori.
+* Harga default.
+* Satuan.
+* Jenis pembayaran.
+* Status.
+* Pajak default opsional.
+
+## Jenis Pembayaran
+
+* Sekali bayar.
+* Bulanan.
+* Tiga bulanan.
+* Enam bulanan.
+* Tahunan.
+* Custom.
+
+## Tombol
+
+* Tambah Produk.
+* Edit.
+* Duplikat.
+* Nonaktifkan.
+* Hapus.
+
+Produk yang sudah digunakan pada invoice tidak boleh dihapus permanen. Produk hanya dapat dinonaktifkan.
+
+---
+
+# 10.11 Halaman Daftar Invoice
+
+## URL
+
+```text
+/invoices
+```
+
+## Header
+
+* Judul “Invoice”.
+* Tombol “Buat Invoice”.
+* Tombol “Export”.
+* Tombol refresh.
+
+## Filter
+
+* Search nomor invoice.
+* Search pelanggan.
+* Status invoice.
+* Tanggal terbit.
+* Jatuh tempo.
+* Jenis invoice.
+* Rentang nominal.
+
+## Kolom Tabel
+
+* Nomor invoice.
+* Pelanggan.
+* Tanggal terbit.
+* Jatuh tempo.
+* Total.
+* Sudah dibayar.
+* Sisa tagihan.
+* Status.
+* Aksi.
+
+## Aksi Per Invoice
+
+* Lihat.
+* Edit.
+* Duplikat.
+* Unduh PDF.
+* Salin Link.
+* Tandai Dikirim.
+* Catat Pembayaran.
+* Batalkan.
+* Hapus.
+
+Aturan tombol:
+
+* Edit hanya aktif untuk `DRAFT`.
+* Invoice `PAID` tidak dapat diedit.
+* Invoice `CANCELLED` tidak dapat menerima pembayaran.
+* Hapus permanen hanya tersedia bagi Developer.
+* Invoice non-draft lebih baik dibatalkan daripada dihapus.
+
+---
+
+# 10.12 Form Buat Invoice
+
+## URL
+
+```text
+/invoices/new
+```
+
+## Bagian 1: Informasi Invoice
+
+Field:
+
+* Pelanggan.
+* Nomor invoice.
+* Tanggal terbit.
+* Tanggal jatuh tempo.
+* Jenis invoice:
+
+  * Project.
+  * Langganan.
+  * Maintenance.
+  * Hosting.
+  * Layanan lain.
+* Mata uang.
+* Template invoice.
+
+Nomor invoice dibuat otomatis tetapi Developer dapat mengubahnya sebelum disimpan.
+
+## Bagian 2: Item Invoice
+
+Setiap item memiliki:
+
+* Produk/layanan.
+* Deskripsi.
+* Quantity.
+* Satuan.
+* Harga satuan.
+* Diskon item opsional.
+* Pajak item opsional.
+* Total item.
+
+## Tombol Item
+
+* Tambah Item.
+* Pilih Produk.
+* Duplikat Item.
+* Hapus Item.
+* Geser Urutan Item.
+
+## Bagian 3: Ringkasan Biaya
+
+Tampilkan:
+
+* Subtotal.
+* Diskon invoice.
+* Pajak.
+* Biaya tambahan.
+* Total.
+* Sudah dibayar.
+* Sisa tagihan.
+
+## Bagian 4: Pembayaran
+
+Field:
+
+* Rekening tujuan.
+* Instruksi pembayaran.
+* Izinkan pembayaran sebagian.
+* Tampilkan QR pembayaran jika tersedia.
+
+## Bagian 5: Catatan
+
+* Catatan untuk pelanggan.
+* Catatan internal.
+* Syarat dan ketentuan.
+
+Catatan internal tidak boleh muncul di PDF atau portal pelanggan.
+
+## Tombol Utama
+
+* Simpan Draft.
+* Simpan dan Preview.
+* Simpan dan Kirim.
+* Batal.
+
+## Validasi
+
+* Pelanggan wajib dipilih.
+* Minimal satu item.
+* Quantity harus lebih dari nol.
+* Harga tidak boleh negatif.
+* Jatuh tempo tidak boleh sebelum tanggal terbit.
+* Nomor invoice harus unik.
+* Total invoice dihitung ulang di server.
+* Nominal menggunakan integer dalam satuan rupiah.
+* Jangan menggunakan floating point untuk penyimpanan uang.
+
+---
+
+# 10.13 Detail Invoice Internal
+
+## URL
+
+```text
+/invoices/[id]
+```
+
+## Header
+
+Tampilkan:
+
+* Nomor invoice.
+* Nama pelanggan.
+* Badge status.
+* Total.
+* Sisa tagihan.
+* Tanggal jatuh tempo.
+
+## Tombol Utama
+
+* Edit.
+* Preview.
+* Unduh PDF.
+* Salin Link.
+* Tandai Dikirim.
+* Catat Pembayaran.
+* Batalkan Invoice.
+* Dropdown Lainnya.
+
+## Tab
+
+### Detail
+
+Menampilkan invoice lengkap.
+
+### Pembayaran
+
+Menampilkan pembayaran yang berkaitan.
+
+### Aktivitas
+
+Menampilkan:
+
+* Dibuat.
+* Diedit.
+* Dikirim.
+* Dibuka pelanggan.
+* Pembayaran dikirim.
+* Pembayaran diverifikasi.
+* Status berubah.
+
+## Preview Invoice
+
+Preview harus menyerupai hasil PDF.
+
+Tombol:
+
+* Unduh PDF.
+* Buka Link Publik.
+* Kembali.
+
+---
+
+# 10.14 Halaman Invoice Publik
+
+## URL
+
+```text
+/i/[publicToken]
+```
+
+Halaman dapat dibuka tanpa login melalui token acak.
+
+## Informasi yang Ditampilkan
+
+* Logo bisnis.
+* Nama bisnis.
+* Nomor invoice.
+* Nama pelanggan.
+* Tanggal terbit.
+* Tanggal jatuh tempo.
+* Daftar item.
+* Total.
+* Status.
+* Rekening pembayaran.
+* Instruksi pembayaran.
+* Catatan pelanggan.
+
+## Tombol
+
+* Unduh PDF.
+* Salin Nomor Rekening.
+* Konfirmasi Pembayaran.
+* Masuk ke Portal.
+
+## Keamanan
+
+* Jangan menggunakan ID database pada URL.
+* Token minimal 32 karakter acak.
+* Token tidak dapat ditebak.
+* Halaman hanya menampilkan satu invoice.
+* Catatan internal tidak boleh tampil.
+* Data pelanggan sensitif harus dibatasi.
+* Terapkan rate limiting.
+
+Saat halaman pertama kali dibuka, status dapat berubah:
+
+```text
+SENT → VIEWED
+```
+
+Simpan waktu pertama kali dibuka pada `viewed_at`.
+
+---
+
+# 10.15 Template Invoice
+
+## URL
+
+```text
+/templates
+```
+
+## Template MVP
+
+### Minimal
+
+* Latar putih.
+* Header sederhana.
+* Logo kiri.
+* Informasi invoice kanan.
+* Tabel bersih.
+* Cocok untuk semua pelanggan.
+
+### Corporate
+
+* Header lebih formal.
+* Warna aksen bisnis.
+* Cocok untuk sekolah, perusahaan, dan instansi.
+
+## Fungsi
+
+Developer dapat:
+
+* Melihat preview.
+* Menentukan template default.
+* Mengubah warna aksen.
+* Mengatur logo.
+* Mengatur footer.
+* Mengatur tanda tangan.
+* Mengaktifkan atau menonaktifkan template.
+
+## Tombol
+
+* Preview.
+* Gunakan Sebagai Default.
+* Edit Tampilan.
+* Simpan.
+* Reset ke Default.
+
+Admin hanya dapat melihat preview.
+
+---
+
+# 10.16 Langganan
+
+## URL
+
+```text
+/subscriptions
+```
+
+## Tabel
+
+Kolom:
+
+* Nama langganan.
+* Pelanggan.
+* Produk/layanan.
+* Siklus.
+* Harga.
+* Tanggal mulai.
+* Tagihan berikutnya.
+* Status.
+* Aksi.
+
+## Filter
+
+* Search pelanggan.
+* Status.
+* Siklus tagihan.
+* Tagihan berikutnya.
+
+## Tombol
+
+* Tambah Langganan.
+* Generate Invoice Sekarang.
+* Pause.
+* Aktifkan Kembali.
+* Edit.
+* Batalkan.
+* Lihat Riwayat Invoice.
+
+---
+
+# 10.17 Form Langganan
+
+## Field
+
+* Pelanggan.
+* Nama langganan.
+* Produk/layanan.
+* Deskripsi.
+* Harga.
+* Siklus:
+
+  * Bulanan.
+  * Tiga bulanan.
+  * Enam bulanan.
+  * Tahunan.
+  * Custom.
+* Tanggal mulai.
+* Tanggal tagihan berikutnya.
+* Jatuh tempo setelah berapa hari.
+* Template invoice.
+* Auto-generate invoice.
+* Status.
+* Catatan internal.
+
+## Tombol
+
+* Simpan Langganan.
+* Simpan dan Buat Invoice Pertama.
+* Batal.
+
+## Aturan
+
+Jika `auto_generate_invoice` aktif:
+
+1. Cron berjalan setiap hari.
+2. Sistem mencari langganan aktif.
+3. Sistem memeriksa `next_invoice_date`.
+4. Sistem membuat invoice sebagai `DRAFT`.
+5. Sistem memperbarui `next_invoice_date`.
+6. Sistem mencatat aktivitas.
+
+Invoice tidak langsung dikirim dalam MVP. Developer atau Admin tetap memeriksa sebelum mengirim.
+
+---
+
+# 10.18 Pembayaran
+
+## URL
+
+```text
+/payments
+```
+
+## Tabel
+
+Kolom:
+
+* ID pembayaran.
+* Nomor invoice.
+* Pelanggan.
+* Tanggal pembayaran.
+* Nominal.
+* Metode.
+* Status.
+* Bukti pembayaran.
+* Diverifikasi oleh.
+* Aksi.
+
+## Filter
+
+* Status.
+* Pelanggan.
+* Metode.
+* Tanggal.
+* Nomor invoice.
+
+## Tombol
+
+* Catat Pembayaran.
+* Lihat Bukti.
+* Verifikasi.
+* Tolak.
+* Batalkan Pembayaran.
+* Unduh Bukti.
+
+---
+
+# 10.19 Form Catat Pembayaran
+
+## Field
+
+* Invoice.
+* Pelanggan otomatis.
+* Nominal pembayaran.
+* Tanggal pembayaran.
+* Metode:
+
+  * Transfer bank.
+  * Tunai.
+  * E-wallet.
+  * Metode lain.
+* Nomor referensi.
+* Bukti pembayaran.
+* Catatan.
+
+## Tombol
+
+* Simpan dan Verifikasi.
+* Simpan Sebagai Pending.
+* Batal.
+
+## Aturan
+
+Setelah pembayaran diverifikasi:
+
+```text
+amount_paid = jumlah seluruh pembayaran VERIFIED
+balance_due = total_amount - amount_paid
+```
+
+Status invoice:
+
+* Jika `amount_paid = 0` → status sebelumnya.
+* Jika `0 < amount_paid < total_amount` → `PARTIALLY_PAID`.
+* Jika `amount_paid >= total_amount` → `PAID`.
+
+Pembayaran yang ditolak tidak memengaruhi saldo invoice.
+
+---
+
+# 10.20 Konfirmasi Pembayaran Oleh User
+
+User membuka invoice dan menekan:
+
+```text
+Konfirmasi Pembayaran
+```
+
+## Form
+
+* Nomor invoice otomatis.
+* Nominal pembayaran.
+* Tanggal pembayaran.
+* Bank atau metode pembayaran.
+* Nama pengirim.
+* Nomor referensi.
+* Upload bukti pembayaran.
+* Catatan.
+
+## Tombol
+
+* Kirim Konfirmasi.
+* Batal.
+
+Setelah dikirim:
+
+* Status pembayaran menjadi `PENDING`.
+* Developer dan Admin mendapatkan notifikasi dalam aplikasi.
+* User melihat pesan bahwa pembayaran menunggu verifikasi.
+* Invoice belum dianggap lunas sampai diverifikasi.
+
+---
+
+# 10.21 Halaman Pengguna
+
+## URL
+
+```text
+/users
+```
+
+## Tab
+
+* Semua Pengguna.
+* Admin.
+* Pelanggan.
+* Undangan.
+* Akun Nonaktif.
+
+## Kolom
+
+* Nama.
+* Email.
+* Role.
+* Pelanggan terkait.
+* Status.
+* Login terakhir.
+* Dibuat pada.
+* Aksi.
+
+## Tombol Developer
+
+* Tambah Admin.
+* Undang User.
+* Ubah Role.
+* Reset Password.
+* Nonaktifkan.
+* Aktifkan.
+* Kirim Ulang Undangan.
+* Hapus Akun.
+
+## Tombol Admin
+
+* Lihat User.
+* Kirim Ulang Undangan pelanggan.
+* Reset Password pelanggan jika diizinkan.
+
+Admin tidak boleh mengubah role.
+
+---
+
+# 10.22 Tambah Admin
+
+## Field
+
+* Nama.
+* Email.
+* Nomor WhatsApp.
+* Role otomatis `ADMIN`.
+* Status.
+* Kirim undangan email.
+
+## Tombol
+
+* Buat Admin.
+* Batal.
+
+Hanya Developer yang dapat mengakses halaman ini.
+
+---
+
+# 10.23 Profil Saya
+
+## Field yang Dapat Diubah
+
+* Nama.
+* Foto profil.
+* Nomor WhatsApp.
+* Jabatan.
+* Zona waktu.
+
+Email tidak dapat diubah langsung tanpa verifikasi.
+
+## Tombol
+
+* Simpan Perubahan.
+* Ubah Foto.
+* Hapus Foto.
+
+---
+
+# 10.24 Pengaturan Bisnis
+
+## URL
+
+```text
+/settings/business
+```
+
+Hanya Developer yang dapat mengubah.
+
+## Field
+
+* Nama bisnis.
+* Nama pemilik.
+* Logo.
+* Alamat.
+* Email bisnis.
+* Nomor WhatsApp.
+* Website.
+* NPWP opsional.
+* Tagline.
+* Tanda tangan.
+* Nama penandatangan.
+* Jabatan penandatangan.
+
+## Tombol
+
+* Simpan Perubahan.
+* Preview Invoice.
+* Reset.
+
+---
+
+# 10.25 Pengaturan Rekening
+
+## URL
+
+```text
+/settings/payment-methods
+```
+
+## Data Rekening
+
+* Nama bank.
+* Nomor rekening.
+* Nama pemilik.
+* Cabang opsional.
+* Instruksi pembayaran.
+* Status aktif.
+* Jadikan rekening utama.
+
+## Tombol
+
+* Tambah Rekening.
+* Edit.
+* Nonaktifkan.
+* Jadikan Utama.
+* Hapus.
+
+Rekening yang pernah digunakan pada invoice tidak boleh dihapus permanen.
+
+---
+
+# 10.26 Pengaturan Nomor Invoice
+
+## URL
+
+```text
+/settings/invoice
+```
+
+## Field
+
+* Prefix invoice.
+* Format tahun.
+* Format bulan.
+* Panjang nomor urut.
+* Nomor urut berikutnya.
+* Reset nomor setiap tahun.
+* Hari jatuh tempo default.
+* Mata uang default.
+* Template default.
+
+Contoh hasil:
+
+```text
+FINV-2026-0001
+```
+
+## Tombol
+
+* Simpan Format.
+* Preview Nomor.
+* Reset ke Default.
+
+---
+
+# 10.27 Activity Log
+
+## URL
+
+```text
+/activity-logs
+```
+
+## Data
+
+* Waktu.
+* Pengguna.
+* Role.
+* Aktivitas.
+* Modul.
+* Target.
+* IP address.
+* Device/user-agent.
+* Metadata ringkas.
+
+## Contoh Aktivitas
+
+* Login.
+* Logout.
+* Membuat pelanggan.
+* Mengedit invoice.
+* Mengirim invoice.
+* Melihat invoice publik.
+* Mengunggah bukti pembayaran.
+* Memverifikasi pembayaran.
+* Mengubah role.
+* Mengubah rekening.
+* Membatalkan invoice.
+
+## Filter
+
+* Pengguna.
+* Modul.
+* Aktivitas.
+* Tanggal.
+* Role.
+
+Activity log tidak dapat diedit atau dihapus melalui UI.
+
+---
+
+# 10.28 Notifikasi Dalam Aplikasi
+
+## Icon Notifikasi
+
+Tampilkan badge jumlah notifikasi belum dibaca.
+
+## Jenis Notifikasi
+
+* Pembayaran baru dikonfirmasi.
+* Invoice melewati jatuh tempo.
+* Langganan siap dibuatkan invoice.
+* Undangan akun diterima.
+* Invoice dibuka pelanggan.
+* Pembayaran ditolak.
+* Langganan mendekati berakhir.
+
+## Tombol
+
+* Tandai Dibaca.
+* Tandai Semua Dibaca.
+* Buka Detail.
+* Hapus dari daftar.
+
+Menghapus notifikasi tidak menghapus activity log.
+
+---
+
+# 10.29 Search Global
+
+Search dapat mencari:
+
+* Nomor invoice.
+* Nama pelanggan.
+* Email pelanggan.
+* Nama perusahaan.
+* Nama langganan.
+* Nomor referensi pembayaran.
+
+Hasil dikelompokkan berdasarkan modul.
+
+Search harus menggunakan debounce dan pagination.
+
+---
+
+# 10.30 Responsiveness
+
+Aplikasi wajib berjalan pada:
+
+* Desktop.
+* Laptop.
+* Tablet.
+* Mobile.
+
+Pada mobile:
+
+* Sidebar menjadi drawer.
+* Tabel dapat berubah menjadi card list.
+* Tombol utama tetap mudah dijangkau.
+* Form item invoice tetap dapat diedit.
+* Preview PDF dapat di-scroll.
+* Tidak boleh ada horizontal overflow yang tidak terkendali.
+
+---
+
+# 11. BACKEND REQUIREMENTS
+
+# 11.1 Authentication
+
+Gunakan Supabase Auth.
+
+Metode login MVP:
+
+* Email dan password.
+* Reset password melalui email.
+* Invite user melalui email.
+
+Registrasi publik harus dimatikan.
+
+## Metadata Pengguna
+
+Simpan:
+
+* User ID.
+* Nama.
+* Role.
+* Status.
+* Customer ID jika role User.
+* Last login.
+* Created by.
+
+---
+
+# 11.2 Authorization
+
+Setiap request wajib memeriksa:
+
+1. Pengguna sudah login.
+2. Akun berstatus aktif.
+3. Role memiliki permission.
+4. Data yang diminta berada dalam scope pengguna.
+
+Contoh:
+
+* Developer dapat membaca semua invoice.
+* Admin dapat membaca invoice operasional.
+* User hanya dapat membaca invoice dengan `customer_id` miliknya.
+
+UI hiding tidak dianggap sebagai sistem keamanan. Backend dan RLS tetap wajib melakukan pembatasan.
+
+---
+
+# 11.3 Struktur Database
+
+## Tabel `profiles`
+
+Field:
+
+```text
+id
+full_name
+email
+phone
+avatar_url
+role
+status
+customer_id
+last_login_at
+created_by
+created_at
+updated_at
+```
+
+## Tabel `business_settings`
+
+Field:
+
+```text
+id
+owner_id
+business_name
+owner_name
+tagline
+logo_url
+signature_url
+signer_name
+signer_title
+email
+phone
+website
+address
+tax_number
+default_currency
+timezone
+created_at
+updated_at
+```
+
+## Tabel `customers`
+
+Field:
+
+```text
+id
+owner_id
+customer_code
+customer_type
+name
+company_name
+email
+phone
+secondary_phone
+address
+city
+province
+postal_code
+tax_number
+project_name
+internal_notes
+status
+created_by
+created_at
+updated_at
+deleted_at
+```
+
+## Tabel `products`
+
+Field:
+
+```text
+id
+owner_id
+code
+name
+description
+category
+default_price
+unit
+billing_type
+default_tax_rate
+status
+created_by
+created_at
+updated_at
+deleted_at
+```
+
+## Tabel `invoices`
+
+Field:
+
+```text
+id
+owner_id
+customer_id
+subscription_id
+invoice_number
+invoice_type
+issue_date
+due_date
+currency
+status
+subtotal
+discount_amount
+tax_amount
+additional_fee
+total_amount
+amount_paid
+balance_due
+allow_partial_payment
+template_id
+payment_method_id
+customer_notes
+internal_notes
+terms
+public_token
+sent_at
+viewed_at
+paid_at
+cancelled_at
+created_by
+updated_by
+created_at
+updated_at
+deleted_at
+```
+
+## Tabel `invoice_items`
+
+Field:
+
+```text
+id
+invoice_id
+product_id
+position
+name
+description
+quantity
+unit
+unit_price
+discount_amount
+tax_rate
+tax_amount
+line_total
+created_at
+updated_at
+```
+
+## Tabel `subscriptions`
+
+Field:
+
+```text
+id
+owner_id
+customer_id
+product_id
+name
+description
+billing_cycle
+custom_interval_days
+price
+currency
+start_date
+next_invoice_date
+end_date
+due_days
+auto_generate_invoice
+template_id
+payment_method_id
+status
+internal_notes
+created_by
+created_at
+updated_at
+cancelled_at
+```
+
+## Tabel `payments`
+
+Field:
+
+```text
+id
+owner_id
+invoice_id
+customer_id
+payment_number
+amount
+payment_date
+method
+sender_name
+reference_number
+proof_url
+status
+notes
+submitted_by
+verified_by
+verified_at
+rejection_reason
+created_at
+updated_at
+cancelled_at
+```
+
+## Tabel `payment_methods`
+
+Field:
+
+```text
+id
+owner_id
+type
+bank_name
+account_number
+account_holder
+branch
+instructions
+is_default
+status
+created_at
+updated_at
+```
+
+## Tabel `invoice_templates`
+
+Field:
+
+```text
+id
+owner_id
+name
+slug
+layout_type
+accent_color
+logo_position
+footer_text
+show_signature
+is_default
+status
+created_at
+updated_at
+```
+
+## Tabel `notifications`
+
+Field:
+
+```text
+id
+user_id
+type
+title
+message
+target_type
+target_id
+is_read
+created_at
+read_at
+```
+
+## Tabel `activity_logs`
+
+Field:
+
+```text
+id
+owner_id
+actor_id
+actor_role
+action
+entity_type
+entity_id
+description
+old_values
+new_values
+ip_address
+user_agent
+created_at
+```
+
+## Tabel `invoice_sequences`
+
+Field:
+
+```text
+id
+owner_id
+year
+month
+prefix
+last_number
+created_at
+updated_at
+```
+
+---
+
+# 11.4 Relasi Database
+
+```text
+profiles.customer_id → customers.id
+
+customers
+├── invoices
+├── subscriptions
+└── payments
+
+invoices
+├── invoice_items
+├── payments
+└── activity_logs
+
+products
+├── invoice_items
+└── subscriptions
+
+subscriptions
+└── invoices
+
+payment_methods
+└── invoices
+```
+
+---
+
+# 11.5 Nomor Invoice
+
+Nomor invoice dibuat melalui transaksi database agar tidak terjadi duplikasi.
+
+Format default:
+
+```text
+FINV-{YEAR}-{SEQUENCE}
+```
+
+Contoh:
+
+```text
+FINV-2026-0001
+```
+
+Proses:
+
+1. Mulai database transaction.
+2. Ambil sequence tahun berjalan dengan row lock.
+3. Tambahkan sequence.
+4. Buat nomor invoice.
+5. Simpan invoice.
+6. Commit transaction.
+
+Nomor invoice yang sudah digunakan tidak boleh digunakan ulang.
+
+---
+
+# 11.6 Perhitungan Invoice
+
+Seluruh perhitungan dilakukan server-side.
+
+## Perhitungan Item
+
+```text
+gross = quantity × unit_price
+after_discount = gross - discount_amount
+tax_amount = after_discount × tax_rate
+line_total = after_discount + tax_amount
+```
+
+## Perhitungan Invoice
+
+```text
+subtotal = total seluruh item sebelum diskon invoice
+total_amount = subtotal - discount_amount + tax_amount + additional_fee
+amount_paid = total pembayaran VERIFIED
+balance_due = total_amount - amount_paid
+```
+
+Gunakan integer untuk nilai rupiah.
+
+Contoh:
+
+```text
+Rp1.500.000 disimpan sebagai 1500000
+```
+
+---
+
+# 11.7 Transisi Status Invoice
+
+Transisi yang diizinkan:
+
+```text
+DRAFT → SENT
+DRAFT → CANCELLED
+
+SENT → VIEWED
+SENT → PARTIALLY_PAID
+SENT → PAID
+SENT → OVERDUE
+SENT → CANCELLED
+
+VIEWED → PARTIALLY_PAID
+VIEWED → PAID
+VIEWED → OVERDUE
+VIEWED → CANCELLED
+
+PARTIALLY_PAID → PAID
+PARTIALLY_PAID → OVERDUE
+PARTIALLY_PAID → CANCELLED
+
+OVERDUE → PARTIALLY_PAID
+OVERDUE → PAID
+OVERDUE → CANCELLED
+```
+
+Invoice `PAID` tidak dapat dibatalkan tanpa proses pembatalan pembayaran oleh Developer.
+
+---
+
+# 11.8 Overdue Invoice
+
+Cron berjalan minimal satu kali sehari.
+
+Proses:
+
+1. Cari invoice yang belum lunas.
+2. Periksa `due_date`.
+3. Jika tanggal sekarang melewati jatuh tempo:
+
+   * Ubah status menjadi `OVERDUE`.
+   * Buat notifikasi.
+   * Buat activity log.
+
+Status `DRAFT`, `PAID`, dan `CANCELLED` tidak boleh berubah menjadi overdue.
+
+---
+
+# 11.9 Generate Invoice Langganan
+
+Cron endpoint:
+
+```text
+/api/cron/subscriptions
+```
+
+Endpoint hanya dapat dipanggil menggunakan secret Vercel Cron.
+
+Proses:
+
+1. Cari subscription `ACTIVE`.
+2. Periksa `auto_generate_invoice = true`.
+3. Periksa `next_invoice_date <= current_date`.
+4. Pastikan belum ada invoice pada periode yang sama.
+5. Buat invoice `DRAFT`.
+6. Buat invoice item.
+7. Perbarui `next_invoice_date`.
+8. Buat notifikasi.
+9. Buat activity log.
+
+Proses wajib idempotent agar invoice tidak dibuat ganda.
+
+---
+
+# 11.10 API atau Server Actions
+
+## Authentication
+
+```text
+POST /api/auth/login
+POST /api/auth/logout
+POST /api/auth/forgot-password
+POST /api/auth/reset-password
+```
+
+Supabase Auth dapat menangani proses inti, tetapi endpoint aplikasi tetap mengontrol redirect dan validasi status akun.
+
+## Customers
+
+```text
+GET    /api/customers
+POST   /api/customers
+GET    /api/customers/:id
+PATCH  /api/customers/:id
+DELETE /api/customers/:id
+POST   /api/customers/:id/invite
+```
+
+## Products
+
+```text
+GET    /api/products
+POST   /api/products
+GET    /api/products/:id
+PATCH  /api/products/:id
+DELETE /api/products/:id
+```
+
+## Invoices
+
+```text
+GET    /api/invoices
+POST   /api/invoices
+GET    /api/invoices/:id
+PATCH  /api/invoices/:id
+DELETE /api/invoices/:id
+POST   /api/invoices/:id/send
+POST   /api/invoices/:id/cancel
+POST   /api/invoices/:id/duplicate
+GET    /api/invoices/:id/pdf
+```
+
+## Public Invoice
+
+```text
+GET  /api/public/invoices/:token
+POST /api/public/invoices/:token/view
+POST /api/public/invoices/:token/payment-confirmation
+```
+
+## Subscriptions
+
+```text
+GET   /api/subscriptions
+POST  /api/subscriptions
+GET   /api/subscriptions/:id
+PATCH /api/subscriptions/:id
+POST  /api/subscriptions/:id/pause
+POST  /api/subscriptions/:id/resume
+POST  /api/subscriptions/:id/cancel
+POST  /api/subscriptions/:id/generate-invoice
+```
+
+## Payments
+
+```text
+GET   /api/payments
+POST  /api/payments
+GET   /api/payments/:id
+POST  /api/payments/:id/verify
+POST  /api/payments/:id/reject
+POST  /api/payments/:id/cancel
+```
+
+## Users
+
+```text
+GET   /api/users
+POST  /api/users/invite
+PATCH /api/users/:id
+POST  /api/users/:id/activate
+POST  /api/users/:id/deactivate
+POST  /api/users/:id/resend-invite
+```
+
+## Settings
+
+```text
+GET   /api/settings/business
+PATCH /api/settings/business
+
+GET   /api/settings/payment-methods
+POST  /api/settings/payment-methods
+PATCH /api/settings/payment-methods/:id
+
+GET   /api/settings/invoice
+PATCH /api/settings/invoice
+```
+
+---
+
+# 11.11 Supabase Storage
+
+Bucket:
+
+```text
+business-assets
+payment-proofs
+invoice-pdfs
+avatars
+```
+
+## Aturan
+
+### business-assets
+
+* Private.
+* Developer dapat upload.
+* Logo dapat diakses melalui signed URL.
+
+### payment-proofs
+
+* Private.
+* User hanya dapat upload ke folder miliknya.
+* Developer dan Admin dapat membaca.
+* User hanya dapat membaca bukti miliknya.
+
+### invoice-pdfs
+
+* Private.
+* PDF diberikan melalui signed URL atau server response.
+* User hanya dapat mengakses invoice miliknya.
+
+### avatars
+
+* Private atau controlled public.
+* Pengguna hanya dapat mengubah avatar sendiri.
+
+---
+
+# 11.12 PDF Invoice
+
+PDF harus dibuat dari data server, bukan dari nilai frontend.
+
+PDF harus memuat:
+
+* Logo.
+* Identitas bisnis.
+* Nomor invoice.
+* Status.
+* Pelanggan.
+* Tanggal.
+* Item.
+* Subtotal.
+* Diskon.
+* Pajak.
+* Biaya tambahan.
+* Total.
+* Pembayaran.
+* Sisa tagihan.
+* Rekening tujuan.
+* Catatan.
+* Syarat.
+* Tanda tangan.
+
+Nama file:
+
+```text
+FINV-2026-0001-Nama-Pelanggan.pdf
+```
+
+PDF harus dapat:
+
+* Diunduh oleh Developer.
+* Diunduh oleh Admin.
+* Diunduh oleh User pemilik invoice.
+* Diunduh melalui public token.
+
+---
+
+# 11.13 Upload Bukti Pembayaran
+
+Ketentuan:
+
+* Format: JPG, JPEG, PNG, atau PDF.
+* Maksimal 5 MB.
+* Nama file diubah menjadi UUID.
+* Validasi MIME type di server.
+* Jangan mempercayai ekstensi file.
+* Simpan dalam private bucket.
+* Scan metadata file jika memungkinkan.
+* Jangan izinkan file executable.
+
+---
+
+# 11.14 Audit Logging
+
+Activity log wajib dibuat untuk:
+
+* Login berhasil.
+* Login gagal berulang.
+* Logout.
+* Membuat data.
+* Mengubah data.
+* Menghapus data.
+* Mengubah status.
+* Mengirim invoice.
+* Membuka invoice publik.
+* Mengunggah bukti pembayaran.
+* Memverifikasi pembayaran.
+* Menolak pembayaran.
+* Mengubah role.
+* Mengubah pengaturan bisnis.
+* Mengubah rekening pembayaran.
+
+Activity log harus dibuat dari backend.
+
+---
+
+# 12. ROW LEVEL SECURITY
+
+## Developer
+
+Dapat mengakses seluruh data dengan `owner_id` miliknya.
+
+## Admin
+
+Dapat mengakses data bisnis yang sama dengan Developer, kecuali tabel atau operasi sensitif.
+
+## User
+
+Hanya dapat mengakses data dengan:
+
+```text
+profiles.customer_id = resource.customer_id
+```
+
+User tidak boleh memiliki akses langsung untuk memperbarui:
+
+* Invoice.
+* Total invoice.
+* Status invoice.
+* Pembayaran terverifikasi.
+* Langganan.
+
+User hanya dapat membuat payment confirmation dengan status `PENDING`.
+
+---
+
+# 13. SECURITY REQUIREMENTS
+
+Wajib diterapkan:
+
+* Row Level Security.
+* Role validation pada server.
+* Zod validation.
+* CSRF protection untuk operasi sensitif.
+* Rate limiting.
+* Secure cookie.
+* HTTPS.
+* Security headers.
+* Content Security Policy.
+* Input sanitization.
+* File validation.
+* Signed URL untuk file private.
+* Public token acak.
+* Audit log.
+* Soft delete.
+* Environment variable validation.
+* Secret tidak boleh dikirim ke browser.
+* Service role key hanya pada backend.
+* Error internal tidak boleh ditampilkan kepada user.
+* Query database harus terparameterisasi.
+
+## Rate Limit Minimum
+
+* Login: 5 percobaan per 15 menit per IP/email.
+* Public invoice: 60 request per menit.
+* Upload payment proof: 10 request per jam.
+* Payment confirmation: 5 request per jam per invoice.
+* Reset password: 3 request per jam per email.
+
+---
+
+# 14. VALIDASI DAN ERROR HANDLING
+
+## Format Error API
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVOICE_NOT_FOUND",
+    "message": "Invoice tidak ditemukan."
+  }
+}
+```
+
+## Format Success API
+
+```json
+{
+  "success": true,
+  "data": {}
+}
+```
+
+## Prinsip
+
+* Pesan error harus jelas.
+* Jangan menampilkan stack trace.
+* Gunakan error code konsisten.
+* Tampilkan toast untuk operasi sederhana.
+* Tampilkan inline error untuk form.
+* Gunakan confirmation dialog untuk tindakan destruktif.
+
+---
+
+# 15. CONFIRMATION DIALOG
+
+Dialog konfirmasi wajib untuk:
+
+* Menghapus pelanggan.
+* Membatalkan invoice.
+* Menghapus invoice.
+* Menolak pembayaran.
+* Membatalkan pembayaran.
+* Menonaktifkan user.
+* Mengubah role.
+* Mengubah rekening utama.
+* Membatalkan langganan.
+
+Contoh:
+
+```text
+Batalkan Invoice?
+
+Invoice FINV-2026-0001 tidak dapat menerima pembayaran setelah dibatalkan.
+
+[ Kembali ] [ Batalkan Invoice ]
+```
+
+Untuk penghapusan permanen, Developer wajib mengetik:
+
+```text
+HAPUS
+```
+
+---
+
+# 16. UI/UX REQUIREMENTS
+
+## Tema
+
+Dashboard:
+
+* Dark mode sebagai tampilan utama.
+* Background hitam atau abu sangat gelap.
+* Card dengan kontras yang jelas.
+* Aksen biru elektrik atau emerald.
+* Status menggunakan warna konsisten.
+
+Invoice:
+
+* Background putih.
+* Bersih.
+* Formal.
+* Mudah dicetak.
+
+## Status Color
+
+* Draft: abu-abu.
+* Sent: biru.
+* Viewed: ungu.
+* Partially Paid: oranye.
+* Paid: hijau.
+* Overdue: merah.
+* Cancelled: gelap.
+
+## Feedback UI
+
+Setiap operasi memiliki:
+
+* Loading state.
+* Disabled state.
+* Success toast.
+* Error toast.
+* Empty state.
+* Skeleton loading.
+* Confirmation dialog jika diperlukan.
+
+---
+
+# 17. NON-FUNCTIONAL REQUIREMENTS
+
+## Performa
+
+* Dashboard awal dimuat kurang dari 3 detik pada koneksi normal.
+* Pagination server-side.
+* Search menggunakan debounce.
+* Data besar tidak dimuat sekaligus.
+* PDF dihasilkan maksimal sekitar 10 detik.
+* Gambar dikompresi.
+
+## Reliability
+
+* Operasi pembayaran menggunakan transaction.
+* Generate invoice langganan idempotent.
+* Nomor invoice tidak boleh duplikat.
+* Pembayaran tidak boleh dihitung dua kali.
+
+## Accessibility
+
+* Semua input memiliki label.
+* Keyboard navigation.
+* Focus state jelas.
+* Kontras warna memadai.
+* Tombol icon memiliki tooltip atau aria-label.
+
+## Browser
+
+Minimal mendukung:
+
+* Chrome terbaru.
+* Firefox terbaru.
+* Edge terbaru.
+* Safari terbaru.
+* Browser Android modern.
+
+---
+
+# 18. ENVIRONMENT VARIABLES
+
+```text
+NEXT_PUBLIC_APP_URL
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+CRON_SECRET
+PDF_SIGNING_SECRET
+APP_ENCRYPTION_KEY
+```
+
+Semua environment variable wajib divalidasi saat aplikasi dijalankan.
+
+---
+
+# 19. STRUKTUR PROJECT
+
+```text
+src/
+├── app/
+│   ├── (auth)/
+│   ├── (dashboard)/
+│   ├── (portal)/
+│   ├── api/
+│   └── i/
+├── components/
+│   ├── ui/
+│   ├── dashboard/
+│   ├── invoices/
+│   ├── customers/
+│   ├── subscriptions/
+│   └── payments/
+├── features/
+│   ├── auth/
+│   ├── customers/
+│   ├── invoices/
+│   ├── subscriptions/
+│   ├── payments/
+│   └── users/
+├── lib/
+│   ├── supabase/
+│   ├── auth/
+│   ├── permissions/
+│   ├── validation/
+│   ├── pdf/
+│   ├── money/
+│   └── audit/
+├── server/
+│   ├── actions/
+│   ├── queries/
+│   ├── services/
+│   └── repositories/
+├── types/
+└── config/
+```
+
+Gunakan pemisahan:
+
+```text
+UI → Server Action/API → Service → Repository → Database
+```
+
+Business logic tidak boleh diletakkan langsung di komponen UI.
+
+---
+
+# 20. ACCEPTANCE CRITERIA
+
+## Authentication
+
+* Developer dapat login.
+* Admin dapat login.
+* User dapat login.
+* Pengguna diarahkan sesuai role.
+* Akun nonaktif tidak dapat login.
+* Registrasi publik tidak tersedia.
+
+## Pelanggan
+
+* Developer dan Admin dapat membuat pelanggan.
+* Developer dan Admin dapat mengedit pelanggan.
+* User tidak dapat melihat pelanggan lain.
+* Pelanggan dapat dikaitkan dengan akun User.
+
+## Invoice
+
+* Developer dan Admin dapat membuat invoice.
+* Total dihitung benar di backend.
+* Nomor invoice unik.
+* Invoice dapat disimpan sebagai Draft.
+* Invoice dapat ditandai Dikirim.
+* Invoice dapat dibuka melalui public token.
+* Invoice dapat diunduh sebagai PDF.
+* User hanya melihat invoice miliknya.
+
+## Pembayaran
+
+* User dapat mengunggah bukti pembayaran.
+* Pembayaran baru berstatus Pending.
+* Developer atau Admin dapat memverifikasi.
+* Invoice berubah menjadi Partially Paid atau Paid secara otomatis.
+* Pembayaran ditolak tidak memengaruhi saldo.
+
+## Langganan
+
+* Developer dan Admin dapat membuat langganan.
+* Cron dapat membuat invoice Draft.
+* Invoice tidak dibuat dua kali untuk periode yang sama.
+* Tanggal invoice berikutnya diperbarui.
+
+## Role
+
+* Developer memiliki seluruh permission.
+* Admin tidak dapat mengubah pengaturan sensitif.
+* User hanya dapat mengakses data miliknya.
+* Backend menolak akses meskipun URL dimasukkan manual.
+
+## Audit
+
+* Perubahan penting tercatat.
+* Activity log tidak dapat diedit.
+* Developer dapat melihat seluruh log.
+
+---
+
+# 21. TESTING REQUIREMENTS
+
+## Unit Test
+
+Wajib untuk:
+
+* Perhitungan invoice.
+* Perhitungan pajak.
+* Perhitungan diskon.
+* Status pembayaran.
+* Nomor invoice.
+* Tanggal langganan berikutnya.
+* Permission checking.
+
+## Integration Test
+
+Wajib untuk:
+
+* Membuat invoice.
+* Verifikasi pembayaran.
+* Generate invoice langganan.
+* Upload bukti pembayaran.
+* User membaca invoice sendiri.
+* User ditolak membaca invoice lain.
+
+## End-to-End Test
+
+Skenario utama:
+
+1. Developer login.
+2. Developer membuat pelanggan.
+3. Developer membuat akun User.
+4. Developer membuat invoice.
+5. Developer mengirim invoice.
+6. User login.
+7. User melihat invoice.
+8. User mengunggah bukti pembayaran.
+9. Admin memverifikasi pembayaran.
+10. Invoice menjadi Paid.
+11. User mengunduh PDF.
+
+---
+
+# 22. SEED DATA
+
+Saat development, buat seed:
+
+## Developer
+
+```text
+developer@finvoice.local
+Role: DEVELOPER
+```
+
+## Admin
+
+```text
+admin@finvoice.local
+Role: ADMIN
+```
+
+## User
+
+```text
+customer@finvoice.local
+Role: USER
+```
+
+## Produk Contoh
+
+* Pembuatan Website.
+* Maintenance Bulanan.
+* Hosting Tahunan.
+* Biaya Setup.
+
+## Pelanggan Contoh
+
+* Pelanggan Individu.
+* Pelanggan Perusahaan.
+* Pelanggan Sekolah.
+
+Seed data tidak boleh digunakan di production.
+
+---
+
+# 23. TAHAP PENGEMBANGAN
+
+## Tahap 1: Foundation
+
+* Setup Next.js.
+* Setup Supabase.
+* Authentication.
+* Profiles.
+* Role dan permission.
+* Layout dashboard.
+* RLS.
+
+## Tahap 2: Master Data
+
+* Pelanggan.
+* Produk dan layanan.
+* Business settings.
+* Payment methods.
+
+## Tahap 3: Invoice
+
+* Create invoice.
+* Invoice items.
+* Perhitungan.
+* Status.
+* Public link.
+* PDF.
+
+## Tahap 4: Pembayaran
+
+* Konfirmasi pembayaran.
+* Upload bukti.
+* Verifikasi.
+* Riwayat pembayaran.
+* Update saldo invoice.
+
+## Tahap 5: Langganan
+
+* Subscription CRUD.
+* Generate invoice manual.
+* Vercel Cron.
+* Idempotency.
+
+## Tahap 6: User Portal
+
+* Dashboard pelanggan.
+* Invoice pelanggan.
+* Langganan pelanggan.
+* Pembayaran pelanggan.
+* Profil.
+
+## Tahap 7: Hardening
+
+* Audit log.
+* Rate limit.
+* Security headers.
+* Integration tests.
+* E2E tests.
+* Error monitoring.
+* Production deployment.
+
+---
+
+# 24. DEFINITION OF DONE
+
+F-INVOICE MVP dianggap selesai jika:
+
+* Ketiga role dapat login.
+* Permission setiap role bekerja.
+* Developer dapat mengelola seluruh sistem.
+* Admin hanya memiliki akses operasional.
+* User hanya melihat data miliknya.
+* Invoice dapat dibuat dan dihitung secara benar.
+* Invoice dapat dibagikan melalui link.
+* Invoice dapat diunduh dalam format PDF.
+* Pelanggan dapat mengirim konfirmasi pembayaran.
+* Developer atau Admin dapat memverifikasi pembayaran.
+* Status dan saldo invoice diperbarui otomatis.
+* Langganan dapat menghasilkan invoice Draft.
+* RLS aktif di seluruh tabel utama.
+* Tidak ada service role key di frontend.
+* Activity log berjalan.
+* Aplikasi responsif.
+* Seluruh alur utama lulus pengujian end-to-end.
+* Aplikasi berhasil dideploy ke Vercel.
+* Database production Supabase menggunakan migration yang terdokumentasi.
+
+---
+
+# 25. RINGKASAN PRODUK FINAL
+
+F-INVOICE versi MVP merupakan aplikasi invoice private dengan struktur:
+
+```text
+Developer
+└── Full control seluruh sistem
+
+Admin
+└── Operasional pelanggan, invoice, langganan, dan pembayaran
+
+User
+└── Portal pelanggan untuk melihat dan membayar tagihan
+```
+
+Fokus utama MVP:
+
+```text
+Pelanggan
+→ Invoice
+→ PDF
+→ Pembayaran
+→ Langganan
+→ Portal User
+```
+
+Sistem harus dibuat sederhana, aman, mudah digunakan, dan dapat dikembangkan secara bertahap tanpa membangun fitur SaaS publik yang belum dibutuhkan.

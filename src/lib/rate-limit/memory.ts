@@ -27,7 +27,8 @@ export function checkRateLimit(
   return { ok: true };
 }
 
-export const LOGIN_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
-export const RESET_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 };
-export const PUBLIC_VIEW_LIMIT = { limit: 60, windowMs: 60 * 1000 };
-export const PUBLIC_PAY_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
+// Hobby: looser login RL (was 5/15m — e2e + retries false-positive). Mutasi tetap auth.
+export const LOGIN_LIMIT = { limit: 40, windowMs: 15 * 60 * 1000 };
+export const RESET_LIMIT = { limit: 8, windowMs: 60 * 60 * 1000 };
+export const PUBLIC_VIEW_LIMIT = { limit: 120, windowMs: 60 * 1000 };
+export const PUBLIC_PAY_LIMIT = { limit: 15, windowMs: 60 * 60 * 1000 };

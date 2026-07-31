@@ -103,7 +103,7 @@ export async function loginAction(
     };
   }
 
-  // best-effort last_login
+  // best-effort last_login + identity cookie (Hobby: skip profiles DB on next nav)
   try {
     const admin = createAdminClient();
     await admin
@@ -112,6 +112,32 @@ export async function loginAction(
       .eq("id", p.id);
   } catch {
     // env may be incomplete in local UI-only runs
+  }
+
+  try {
+    const { cookies } = await import("next/headers");
+    const {
+      encodeIdentityCookie,
+      IDENTITY_COOKIE,
+      identityCookieOptions,
+    } = await import("@/lib/auth/identity-cookie");
+    const jar = await cookies();
+    jar.set(
+      IDENTITY_COOKIE,
+      await encodeIdentityCookie({
+        id: p.id,
+        role: p.role,
+        status: p.status,
+        full_name: p.full_name ?? "",
+        email: p.email ?? "",
+        owner_id: p.owner_id ?? "",
+        customer_id: p.customer_id ?? "",
+        phone: p.phone ?? "",
+      }),
+      identityCookieOptions(),
+    );
+  } catch {
+    /* non-fatal */
   }
 
   return {

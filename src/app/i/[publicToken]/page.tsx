@@ -67,16 +67,24 @@ export default async function PublicInvoicePage({
       <div className="mx-auto max-w-3xl space-y-4">
         <Card>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-sm text-mid-gray">{dto.business_name}</p>
-              <h1 className="text-2xl font-semibold tracking-tight">{dto.invoice_number}</h1>
-              <p className="mt-1 text-sm">Kepada: {dto.customer_name}</p>
+              <h1 className="text-balance text-2xl font-semibold tracking-tight">
+                {dto.invoice_number}
+              </h1>
+              <p className="mt-1 text-sm">
+                Kepada: <span className="font-medium text-ink">{dto.customer_name}</span>
+              </p>
             </div>
             <Badge tone={statusTone(dto.status)}>{dto.status}</Badge>
           </div>
           <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-            <p>Tanggal: {dto.issue_date}</p>
-            <p>Jatuh tempo: {dto.due_date}</p>
+            <p>
+              <span className="text-mid-gray">Tanggal</span> · {dto.issue_date}
+            </p>
+            <p>
+              <span className="text-mid-gray">Jatuh tempo</span> · {dto.due_date}
+            </p>
           </div>
         </Card>
 
@@ -99,13 +107,31 @@ export default async function PublicInvoicePage({
               ))}
             </tbody>
           </table>
-          <div className="space-y-1 p-4 text-sm">
-            <div className="flex justify-between"><span>Subtotal</span><span>{formatIdr(dto.subtotal)}</span></div>
-            <div className="flex justify-between"><span>Diskon</span><span>{formatIdr(dto.discount_amount)}</span></div>
-            <div className="flex justify-between"><span>Pajak</span><span>{formatIdr(dto.tax_amount)}</span></div>
-            <div className="flex justify-between font-semibold"><span>Total</span><span>{formatIdr(dto.total_amount)}</span></div>
-            <div className="flex justify-between"><span>Terbayar</span><span>{formatIdr(dto.amount_paid)}</span></div>
-            <div className="flex justify-between font-semibold"><span>Sisa</span><span>{formatIdr(dto.balance_due)}</span></div>
+          <div className="space-y-1.5 border-t border-hairline p-4 text-sm tabular-nums">
+            <div className="flex justify-between gap-4">
+              <span className="text-mid-gray">Subtotal</span>
+              <span>{formatIdr(dto.subtotal)}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-mid-gray">Diskon</span>
+              <span>{formatIdr(dto.discount_amount)}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-mid-gray">Pajak</span>
+              <span>{formatIdr(dto.tax_amount)}</span>
+            </div>
+            <div className="flex justify-between gap-4 font-semibold">
+              <span>Total</span>
+              <span>{formatIdr(dto.total_amount)}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-mid-gray">Terbayar</span>
+              <span>{formatIdr(dto.amount_paid)}</span>
+            </div>
+            <div className="flex justify-between gap-4 border-t border-hairline pt-2 text-base font-semibold">
+              <span>Sisa</span>
+              <span>{formatIdr(dto.balance_due)}</span>
+            </div>
           </div>
         </Card>
 
@@ -124,8 +150,14 @@ export default async function PublicInvoicePage({
         ) : null}
 
         {pdfHref ? (
-          <Card>
-            <a className="text-sm font-medium underline" href={pdfHref}>Download PDF</a>
+          <Card className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-mid-gray">Unduh salinan PDF invoice ini.</p>
+            <a
+              className="inline-flex h-10 items-center rounded-[18px] border border-hairline bg-paper px-4 text-sm font-medium text-ink hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+              href={pdfHref}
+            >
+              Download PDF
+            </a>
           </Card>
         ) : null}
 

@@ -41,26 +41,50 @@ export function PublicPaymentForm({ token, maxAmount }: { token: string; maxAmou
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <Label>Jumlah (maks {maxAmount})</Label>
-          <Input name="amount" type="number" min={1} max={maxAmount} required defaultValue={maxAmount} />
+        <div className="space-y-1.5">
+          <Label htmlFor="pub-amount">Jumlah (IDR)</Label>
+          <Input
+            id="pub-amount"
+            name="amount"
+            type="number"
+            min={1}
+            max={maxAmount}
+            required
+            defaultValue={maxAmount}
+            className="tabular-nums"
+          />
+          <p className="text-xs text-mid-gray">Maks. {maxAmount.toLocaleString("id-ID")}</p>
         </div>
-        <div>
-          <Label>Tanggal</Label>
-          <Input name="payment_date" type="date" required defaultValue={today} />
+        <div className="space-y-1.5">
+          <Label htmlFor="pub-date">Tanggal bayar</Label>
+          <Input
+            id="pub-date"
+            name="payment_date"
+            type="date"
+            required
+            defaultValue={today}
+          />
         </div>
-        <div>
-          <Label>Nama pengirim</Label>
-          <Input name="sender_name" />
+        <div className="space-y-1.5">
+          <Label htmlFor="pub-sender">Nama pengirim</Label>
+          <Input id="pub-sender" name="sender_name" autoComplete="name" />
         </div>
-        <div>
-          <Label>Referensi</Label>
-          <Input name="reference_number" />
+        <div className="space-y-1.5">
+          <Label htmlFor="pub-ref">No. referensi</Label>
+          <Input id="pub-ref" name="reference_number" />
         </div>
       </div>
-      {error ? <p className="text-sm text-ember">{error}</p> : null}
-      {ok ? <p className="text-sm text-ink">{ok}</p> : null}
-      <Button type="submit" disabled={pending || maxAmount <= 0}>
+      {error ? (
+        <p className="text-sm text-ember" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {ok ? (
+        <p className="text-sm text-ink" role="status">
+          {ok}
+        </p>
+      ) : null}
+      <Button type="submit" disabled={pending || maxAmount <= 0} className="w-full sm:w-auto">
         {pending ? "Mengirim…" : "Konfirmasi pembayaran"}
       </Button>
     </form>

@@ -5,10 +5,8 @@ export default function LoginPage() {
   return (
     <Card>
       <div className="mb-6 space-y-1">
-        <p className="text-xs font-medium uppercase tracking-wide text-mid-gray">
-          F-INVOICE
-        </p>
-        <CardTitle>Masuk ke F-INVOICE</CardTitle>
+        <p className="text-sm font-semibold tracking-tight text-ink">F-INVOICE</p>
+        <CardTitle>Masuk</CardTitle>
         <CardDescription>
           Kelola invoice, langganan, dan pembayaran pelanggan.
         </CardDescription>

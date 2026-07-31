@@ -31,9 +31,9 @@ function NavLinks({
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "rounded-[18px] px-3 py-2 text-sm font-medium transition-colors",
+              "rounded-[18px] px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
               active
-                ? "bg-paper text-ink shadow-[0_0_0_1px_rgba(23,23,23,0.05)]"
+                ? "bg-paper text-ink shadow-subtle"
                 : "text-mid-gray hover:bg-paper/70 hover:text-ink",
             )}
           >

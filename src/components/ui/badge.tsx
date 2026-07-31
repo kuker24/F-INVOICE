@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 const tones: Record<string, string> = {
   default: "bg-canvas text-ink",
-  success: "bg-ink text-[#fafafa]",
+  success: "bg-ink text-surface-alt",
   warn: "bg-canvas text-ink border border-hairline",
   danger: "bg-ember/10 text-ember",
   muted: "bg-canvas text-mid-gray",

@@ -21,43 +21,58 @@ export default async function DashboardPage() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardTitle className="text-sm text-mid-gray">Pelanggan</CardTitle>
-          <p className="mt-2 text-2xl font-semibold">{stats.customers}</p>
+          <p className="text-sm text-mid-gray">Pelanggan</p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+            {stats.customers}
+          </p>
         </Card>
         <Card>
-          <CardTitle className="text-sm text-mid-gray">Invoice open</CardTitle>
-          <p className="mt-2 text-2xl font-semibold">{stats.openInvoices}</p>
+          <p className="text-sm text-mid-gray">Invoice open</p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+            {stats.openInvoices}
+          </p>
         </Card>
         <Card>
-          <CardTitle className="text-sm text-mid-gray">Overdue</CardTitle>
-          <p className="mt-2 text-2xl font-semibold text-ember">{stats.overdueInvoices}</p>
+          <p className="text-sm text-mid-gray">Overdue</p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-ember">
+            {stats.overdueInvoices}
+          </p>
         </Card>
         <Card>
-          <CardTitle className="text-sm text-mid-gray">Outstanding</CardTitle>
-          <p className="mt-2 text-2xl font-semibold">{formatIdr(stats.outstanding)}</p>
+          <p className="text-sm text-mid-gray">Outstanding</p>
+          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+            {formatIdr(stats.outstanding)}
+          </p>
         </Card>
         {stats.showRevenue ? (
           <Card className="sm:col-span-2">
-            <CardTitle className="text-sm text-mid-gray">Revenue (PAID)</CardTitle>
-            <p className="mt-2 text-2xl font-semibold">{formatIdr(stats.revenue ?? 0)}</p>
+            <p className="text-sm text-mid-gray">Revenue (PAID)</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+              {formatIdr(stats.revenue ?? 0)}
+            </p>
           </Card>
         ) : (
           <Card className="sm:col-span-2">
-            <CardTitle className="text-sm text-mid-gray">Revenue</CardTitle>
+            <p className="text-sm text-mid-gray">Revenue</p>
             <p className="mt-2 text-sm text-mid-gray">Disembunyikan untuk Admin.</p>
           </Card>
         )}
       </div>
       <Card>
         <CardTitle className="mb-3">Notifikasi</CardTitle>
-        <ul className="space-y-2 text-sm">
-          {notes.map((n) => (
-            <li key={n.id} className={n.is_read ? "text-mid-gray" : "text-ink"}>
-              <span className="font-medium">{n.title}</span> — {n.message}
-            </li>
-          ))}
-          {!notes.length ? <li className="text-mid-gray">Tidak ada notifikasi.</li> : null}
-        </ul>
+        {notes.length ? (
+          <ul className="space-y-2 text-sm">
+            {notes.map((n) => (
+              <li key={n.id} className={n.is_read ? "text-mid-gray" : "text-ink"}>
+                <span className="font-medium">{n.title}</span> — {n.message}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-mid-gray">
+            Tidak ada notifikasi. Aktivitas invoice dan pembayaran akan muncul di sini.
+          </p>
+        )}
       </Card>
     </div>
   );

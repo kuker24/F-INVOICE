@@ -11,39 +11,55 @@ export async function getDashboardStats(profile: Profile) {
   assertStaff(profile);
   const ownerId = ownerIdOf(profile);
   const admin = createAdminClient();
+  const open = [...OPEN];
 
-  const settingsP = ensureBusinessSettings(ownerId);
-  const customersP = admin
-    .from("customers")
-    .select("id", { count: "exact", head: true })
-    .eq("owner_id", ownerId)
-    .is("deleted_at", null);
-  // Only money columns needed — not full invoice rows
-  const invoicesP = admin
-    .from("invoices")
-    .select("status,total_amount,balance_due")
-    .eq("owner_id", ownerId)
-    .is("deleted_at", null);
-
-  const [settings, customersRes, invoicesRes] = await Promise.all([
-    settingsP,
-    customersP,
-    invoicesP,
+  const [
+    settings,
+    customersRes,
+    openCnt,
+    overdueCnt,
+    openMoney,
+    paidMoney,
+  ] = await Promise.all([
+    ensureBusinessSettings(ownerId),
+    admin
+      .from("customers")
+      .select("id", { count: "exact", head: true })
+      .eq("owner_id", ownerId)
+      .is("deleted_at", null),
+    admin
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("owner_id", ownerId)
+      .is("deleted_at", null)
+      .in("status", open),
+    admin
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("owner_id", ownerId)
+      .is("deleted_at", null)
+      .eq("status", "OVERDUE"),
+    admin
+      .from("invoices")
+      .select("balance_due")
+      .eq("owner_id", ownerId)
+      .is("deleted_at", null)
+      .in("status", open),
+    admin
+      .from("invoices")
+      .select("total_amount")
+      .eq("owner_id", ownerId)
+      .is("deleted_at", null)
+      .eq("status", "PAID"),
   ]);
 
-  const rows = invoicesRes.data ?? [];
-  let openInvoices = 0;
-  let overdueInvoices = 0;
   let outstanding = 0;
+  for (const r of openMoney.data ?? []) {
+    outstanding += Number(r.balance_due);
+  }
   let paidSum = 0;
-  for (const r of rows) {
-    const st = r.status as string;
-    if ((OPEN as readonly string[]).includes(st)) {
-      openInvoices += 1;
-      outstanding += Number(r.balance_due);
-    }
-    if (st === "OVERDUE") overdueInvoices += 1;
-    if (st === "PAID") paidSum += Number(r.total_amount);
+  for (const r of paidMoney.data ?? []) {
+    paidSum += Number(r.total_amount);
   }
 
   const showRevenue =
@@ -51,9 +67,9 @@ export async function getDashboardStats(profile: Profile) {
 
   return {
     customers: customersRes.count ?? 0,
-    invoices: rows.length,
-    openInvoices,
-    overdueInvoices,
+    invoices: (openCnt.count ?? 0) + (paidMoney.data?.length ?? 0),
+    openInvoices: openCnt.count ?? 0,
+    overdueInvoices: overdueCnt.count ?? 0,
     outstanding,
     revenue: showRevenue ? paidSum : null,
     showRevenue,

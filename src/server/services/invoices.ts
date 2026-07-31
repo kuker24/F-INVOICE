@@ -1,6 +1,7 @@
 import "server-only";
 import { randomBytes } from "crypto";
 import { after } from "next/server";
+import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -112,7 +113,9 @@ export async function listInvoices(
   const supabase = await createClient();
   let query = supabase
     .from("invoices")
-    .select("*, customers(name, code)")
+    .select(
+      "id,invoice_number,status,issue_date,due_date,total_amount,balance_due,amount_paid,customer_id,created_at,customers(name, code)",
+    )
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (opts?.status) query = query.eq("status", opts.status);
@@ -427,41 +430,43 @@ export async function cancelInvoice(profile: Profile, id: string) {
   return data as Invoice;
 }
 
-export async function getPublicInvoiceByToken(
-  token: string,
-): Promise<PublicInvoiceDTO> {
-  if (!token || token.length < 32) {
-    throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
-  }
-  const admin = createAdminClient();
-  type Row = {
-    id: string;
-    owner_id: string;
-    customer_id: string;
-    payment_method_id: string | null;
-    invoice_number: string;
-    status: InvoiceStatus;
-    issue_date: string;
-    due_date: string;
-    subtotal: number;
-    discount_amount: number;
-    tax_amount: number;
-    additional_fee: number;
-    total_amount: number;
-    amount_paid: number;
-    balance_due: number;
-    allow_partial_payment: boolean;
-    customer_notes: string | null;
-    terms: string | null;
-    invoice_items?: InvoiceItem[] | null;
-    customers?: { name: string } | { name: string }[] | null;
-    payment_methods?:
-      | PublicInvoiceDTO["payment_method"]
-      | PublicInvoiceDTO["payment_method"][]
-      | null;
-  };
+type PublicRow = {
+  id: string;
+  owner_id: string;
+  customer_id: string;
+  payment_method_id: string | null;
+  invoice_number: string;
+  status: InvoiceStatus;
+  issue_date: string;
+  due_date: string;
+  subtotal: number;
+  discount_amount: number;
+  tax_amount: number;
+  additional_fee: number;
+  total_amount: number;
+  amount_paid: number;
+  balance_due: number;
+  allow_partial_payment: boolean;
+  customer_notes: string | null;
+  terms: string | null;
+  invoice_items?: InvoiceItem[] | null;
+  customers?: { name: string } | { name: string }[] | null;
+  payment_methods?:
+    | PublicInvoiceDTO["payment_method"]
+    | PublicInvoiceDTO["payment_method"][]
+    | null;
+};
 
-  // Pass 1: embed invoice+items+customer+pm (1 RTT). Biz name needs owner_id — second small read.
+type CachedPublic = {
+  dto: PublicInvoiceDTO;
+  rawStatus: InvoiceStatus;
+  ownerId: string;
+  invoiceId: string;
+  invoiceNumber: string;
+};
+
+async function loadPublicInvoiceUncached(token: string): Promise<CachedPublic> {
+  const admin = createAdminClient();
   const { data: inv, error } = await admin
     .from("invoices")
     .select(
@@ -480,37 +485,9 @@ export async function getPublicInvoiceByToken(
   if (error || !inv) {
     throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
   }
-  const invoice = inv as unknown as Row;
+  const invoice = inv as unknown as PublicRow;
   if (invoice.status === "DRAFT") {
     throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
-  }
-
-  let displayStatus: InvoiceStatus = invoice.status;
-  if (invoice.status === "SENT") {
-    displayStatus = "VIEWED";
-    // Don't block HTML on status write + activity log
-    after(async () => {
-      try {
-        await admin.rpc("rpc_set_invoice_bypass");
-        await admin
-          .from("invoices")
-          .update({
-            status: "VIEWED",
-            viewed_at: new Date().toISOString(),
-          })
-          .eq("id", invoice.id)
-          .eq("status", "SENT");
-        await logActivity({
-          ownerId: invoice.owner_id,
-          action: "invoice.public_view",
-          entityType: "invoice",
-          entityId: invoice.id,
-          description: `Public view ${invoice.invoice_number}`,
-        });
-      } catch {
-        /* best-effort */
-      }
-    });
   }
 
   const { data: biz } = await admin
@@ -519,15 +496,66 @@ export async function getPublicInvoiceByToken(
     .eq("owner_id", invoice.owner_id)
     .maybeSingle();
 
+  const displayStatus: InvoiceStatus =
+    invoice.status === "SENT" ? "VIEWED" : invoice.status;
   const items = [...(invoice.invoice_items ?? [])].sort(
     (a, b) => (a.position ?? 0) - (b.position ?? 0),
   );
-  return buildPublicDto(
-    invoice,
-    displayStatus,
-    items,
-    biz?.business_name as string | undefined,
-  );
+  return {
+    dto: buildPublicDto(
+      invoice,
+      displayStatus,
+      items,
+      biz?.business_name as string | undefined,
+    ),
+    rawStatus: invoice.status,
+    ownerId: invoice.owner_id,
+    invoiceId: invoice.id,
+    invoiceNumber: invoice.invoice_number,
+  };
+}
+
+export async function getPublicInvoiceByToken(
+  token: string,
+): Promise<PublicInvoiceDTO> {
+  if (!token || token.length < 32) {
+    throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
+  }
+
+  const cached = await unstable_cache(
+    () => loadPublicInvoiceUncached(token),
+    ["public-invoice", token],
+    { revalidate: 60, tags: [`public-invoice:${token}`] },
+  )();
+
+  if (cached.rawStatus === "SENT") {
+    // Don't block HTML; only runs on cache miss / revalidate path
+    after(async () => {
+      try {
+        const admin = createAdminClient();
+        await admin.rpc("rpc_set_invoice_bypass");
+        await admin
+          .from("invoices")
+          .update({
+            status: "VIEWED",
+            viewed_at: new Date().toISOString(),
+          })
+          .eq("id", cached.invoiceId)
+          .eq("status", "SENT");
+        await logActivity({
+          ownerId: cached.ownerId,
+          action: "invoice.public_view",
+          entityType: "invoice",
+          entityId: cached.invoiceId,
+          description: `Public view ${cached.invoiceNumber}`,
+        });
+      } catch {
+        /* best-effort */
+      }
+    });
+  }
+
+  return cached.dto;
 }
 
 function buildPublicDto(
@@ -667,7 +695,9 @@ export async function exportInvoicesCsv(profile: Profile) {
     "customer",
   ];
   const lines = [header.join(",")];
-  for (const r of rows as Array<Invoice & { customers?: { name?: string } }>) {
+  for (const r of rows as unknown as Array<
+    Invoice & { customers?: { name?: string } }
+  >) {
     const cust =
       r.customers && typeof r.customers === "object"
         ? (r.customers as { name?: string }).name ?? ""

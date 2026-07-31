@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getSessionProfile } from "@/lib/auth/profile";
+import { requireVerifiedProfile } from "@/lib/auth/profile";
 import { fail, ok, toActionError, type ActionResult } from "@/server/errors";
 import * as users from "@/server/services/users";
 
 async function requireSession() {
-  const s = await getSessionProfile();
+  const s = await requireVerifiedProfile();
   if (!s) throw Object.assign(new Error("Login dulu."), { code: "UNAUTHORIZED" });
   return s.profile;
 }

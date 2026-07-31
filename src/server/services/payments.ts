@@ -84,7 +84,9 @@ export async function listPayments(profile: Profile) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("payments")
-    .select("*, invoices(invoice_number), customers(name)")
+    .select(
+      "id,invoice_id,customer_id,amount,payment_date,status,method,source,created_at,invoices(invoice_number),customers(name)",
+    )
     .order("created_at", { ascending: false });
   if (error) throw new AppError("LIST_FAILED", error.message);
   return data ?? [];
@@ -97,7 +99,9 @@ export async function listPortalPayments(profile: Profile) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("payments")
-    .select("*, invoices(invoice_number)")
+    .select(
+      "id,invoice_id,customer_id,amount,payment_date,status,method,source,created_at,invoices(invoice_number)",
+    )
     .eq("customer_id", profile.customer_id)
     .order("created_at", { ascending: false });
   if (error) throw new AppError("LIST_FAILED", error.message);

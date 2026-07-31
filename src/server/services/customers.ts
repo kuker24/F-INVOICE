@@ -28,7 +28,9 @@ export async function listCustomers(profile: Profile, q?: string) {
   const supabase = await createClient();
   let query = supabase
     .from("customers")
-    .select("*")
+    .select(
+      "id,code,name,type,email,phone,city,status,created_at,updated_at,deleted_at,owner_id",
+    )
     .is("deleted_at", null)
     .order("name");
   if (q?.trim()) {

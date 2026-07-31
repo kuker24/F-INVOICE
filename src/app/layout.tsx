@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   description: "Private invoice management system",
 };
 
+/** Run serverless near SEA users (was iad1 → multi-second RTT). */
+export const preferredRegion = ["sin1"];
+
 export default function RootLayout({
   children,
 }: Readonly<{

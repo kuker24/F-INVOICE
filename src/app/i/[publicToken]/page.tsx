@@ -1,6 +1,4 @@
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
-import { checkRateLimit, PUBLIC_VIEW_LIMIT } from "@/lib/rate-limit";
 import { getPublicInvoiceByToken } from "@/server/services/invoices";
 import { AppError } from "@/server/errors";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -12,29 +10,16 @@ import { makePdfUrl } from "@/lib/pdf/sign";
 import { getPublicEnv } from "@/config/public-env";
 import { invoiceShareText, whatsappShareUrl } from "@/lib/share/whatsapp";
 
+/** ISR — rate-limit di middleware; VIEWED write via after(). */
+export const revalidate = 60;
+export const preferredRegion = ["sin1"];
+
 export default async function PublicInvoicePage({
   params,
 }: {
   params: Promise<{ publicToken: string }>;
 }) {
   const { publicToken } = await params;
-  const h = await headers();
-  const ip =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-real-ip") ||
-    "unknown";
-  const rl = await checkRateLimit(
-    `public-page:${ip}`,
-    PUBLIC_VIEW_LIMIT.limit,
-    PUBLIC_VIEW_LIMIT.windowMs,
-  );
-  if (!rl.ok) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas p-6">
-        <Card><p>Terlalu banyak permintaan. Coba lagi nanti.</p></Card>
-      </div>
-    );
-  }
 
   let dto;
   try {

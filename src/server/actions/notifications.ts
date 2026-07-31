@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionProfile } from "@/lib/auth/profile";
+import { requireVerifiedProfile } from "@/lib/auth/profile";
 import { fail, ok, toActionError, type ActionResult } from "@/server/errors";
 import * as n from "@/server/services/notifications";
 
 export async function markNotificationReadAction(id: string): Promise<ActionResult> {
   try {
-    const s = await getSessionProfile();
+    const s = await requireVerifiedProfile();
     if (!s) return fail("UNAUTHORIZED", "Login dulu.");
     await n.markNotificationRead(s.profile, id);
     revalidatePath("/dashboard");
@@ -20,7 +20,7 @@ export async function markNotificationReadAction(id: string): Promise<ActionResu
 
 export async function markAllNotificationsReadAction(): Promise<ActionResult> {
   try {
-    const s = await getSessionProfile();
+    const s = await requireVerifiedProfile();
     if (!s) return fail("UNAUTHORIZED", "Login dulu.");
     await n.markAllNotificationsRead(s.profile);
     return ok(undefined);

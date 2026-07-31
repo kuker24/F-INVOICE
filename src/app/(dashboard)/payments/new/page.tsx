@@ -8,7 +8,10 @@ import type { Invoice } from "@/types/database";
 export default async function NewPaymentPage() {
   const session = await getSessionProfile();
   if (!session) redirect("/login");
-  const rows = (await listInvoices(session.profile)) as Invoice[];
+  const rows = (await listInvoices(session.profile)) as unknown as Pick<
+    Invoice,
+    "id" | "invoice_number" | "balance_due" | "status"
+  >[];
   const open = rows.filter((r) =>
     ["SENT", "VIEWED", "PARTIALLY_PAID", "OVERDUE"].includes(r.status),
   );

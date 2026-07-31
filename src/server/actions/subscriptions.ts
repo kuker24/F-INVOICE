@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionProfile } from "@/lib/auth/profile";
+import { requireVerifiedProfile } from "@/lib/auth/profile";
 import { fail, ok, toActionError, type ActionResult } from "@/server/errors";
 import { subscriptionSchema } from "@/lib/validation/invoice";
 import * as subs from "@/server/services/subscriptions";
 
 async function staff() {
-  const s = await getSessionProfile();
+  const s = await requireVerifiedProfile();
   if (!s) throw Object.assign(new Error("Login dulu."), { code: "UNAUTHORIZED" });
   return s.profile;
 }

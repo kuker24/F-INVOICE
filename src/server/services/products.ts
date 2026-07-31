@@ -24,7 +24,9 @@ export async function listProducts(profile: Profile, q?: string) {
   const supabase = await createClient();
   let query = supabase
     .from("products")
-    .select("*")
+    .select(
+      "id,code,name,category,default_price,unit,billing_type,default_tax_rate,status,created_at,updated_at,deleted_at,owner_id",
+    )
     .is("deleted_at", null)
     .order("name");
   if (q?.trim()) {

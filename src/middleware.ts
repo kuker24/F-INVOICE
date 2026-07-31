@@ -1,6 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import type { AccountStatus, UserRole } from "@/types/database";
+import {
+  HDR_CUSTOMER,
+  HDR_EMAIL,
+  HDR_NAME,
+  HDR_OWNER,
+  HDR_PHONE,
+  HDR_ROLE,
+  HDR_STATUS,
+  HDR_UID,
+} from "@/lib/auth/request-identity";
+import {
+  checkRateLimit,
+  PUBLIC_VIEW_LIMIT,
+} from "@/lib/rate-limit";
 
 const AUTH_PATHS = ["/login", "/forgot-password", "/reset-password"];
 /** No session refresh — pure public (saves Supabase getUser RTT every hit). */
@@ -9,6 +23,7 @@ const SKIP_AUTH_PREFIXES = [
   "/api/public/",
   "/api/cron/",
   "/api/webhooks/",
+  "/api/health",
 ];
 
 function isAuthPath(pathname: string) {
@@ -22,10 +37,67 @@ function skipAuth(pathname: string) {
   return SKIP_AUTH_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
+function withIdentity(
+  request: NextRequest,
+  base: NextResponse,
+  profile: {
+    id: string;
+    role: string;
+    status: string;
+    full_name: string | null;
+    email: string | null;
+    owner_id: string | null;
+    customer_id: string | null;
+    phone: string | null;
+  },
+) {
+  // Clone request with identity headers so RSC layout skips second getUser.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(HDR_UID, profile.id);
+  requestHeaders.set(HDR_ROLE, profile.role);
+  requestHeaders.set(HDR_STATUS, profile.status);
+  requestHeaders.set(HDR_NAME, profile.full_name ?? "");
+  requestHeaders.set(HDR_EMAIL, profile.email ?? "");
+  requestHeaders.set(HDR_OWNER, profile.owner_id ?? "");
+  requestHeaders.set(HDR_CUSTOMER, profile.customer_id ?? "");
+  requestHeaders.set(HDR_PHONE, profile.phone ?? "");
+
+  const res = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+  // Preserve session cookies from Supabase refresh
+  base.cookies.getAll().forEach((c) => {
+    res.cookies.set(c.name, c.value);
+  });
+  return res;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Fast path: public invoice / cron / webhooks — no Supabase round-trip
+  // Public invoice: edge rate-limit only (no Supabase, no headers() in page)
+  if (pathname.startsWith("/i/")) {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
+    const rl = await checkRateLimit(
+      `public-page:${ip}`,
+      PUBLIC_VIEW_LIMIT.limit,
+      PUBLIC_VIEW_LIMIT.windowMs,
+    );
+    if (!rl.ok) {
+      return new NextResponse("Terlalu banyak permintaan. Coba lagi nanti.", {
+        status: 429,
+        headers: {
+          "Retry-After": String(rl.retryAfterSec),
+          "Content-Type": "text/plain; charset=utf-8",
+        },
+      });
+    }
+    return NextResponse.next();
+  }
+
   if (skipAuth(pathname)) {
     return NextResponse.next();
   }
@@ -40,7 +112,9 @@ export async function middleware(request: NextRequest) {
     if (user && (pathname === "/login" || pathname === "/forgot-password")) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role,status")
+        .select(
+          "id,role,status,full_name,email,owner_id,customer_id,phone",
+        )
         .eq("id", user.id)
         .maybeSingle();
 
@@ -62,7 +136,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role,status")
+    .select("id,role,status,full_name,email,owner_id,customer_id,phone")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -95,7 +169,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return supabaseResponse;
+  return withIdentity(request, supabaseResponse, profile);
 }
 
 export const config = {

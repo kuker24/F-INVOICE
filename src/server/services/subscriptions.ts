@@ -33,7 +33,9 @@ export async function listSubscriptions(profile: Profile) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("*, customers(name)")
+    .select(
+      "id,name,billing_cycle,price,status,next_invoice_date,start_date,customer_id,created_at,customers(name)",
+    )
     .order("created_at", { ascending: false });
   if (error) throw new AppError("LIST_FAILED", error.message);
   return data ?? [];

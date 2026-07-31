@@ -7,12 +7,12 @@ export async function listMyNotifications(profile: Profile, limit = 30) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("notifications")
-    .select("*")
+    .select("id,title,message,is_read,created_at,entity_type,entity_id")
     .eq("user_id", profile.id)
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw new AppError("LIST_FAILED", error.message);
-  return (data ?? []) as Notification[];
+  return (data ?? []) as unknown as Notification[];
 }
 
 export async function markNotificationRead(profile: Profile, id: string) {

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getSessionProfile } from "@/lib/auth/profile";
+import { requireVerifiedProfile } from "@/lib/auth/profile";
 import { fail, ok, toActionError, type ActionResult } from "@/server/errors";
 import * as templates from "@/server/services/templates";
 
@@ -20,7 +20,7 @@ export async function upsertTemplateAction(
   raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    const s = await getSessionProfile();
+    const s = await requireVerifiedProfile();
     if (!s) return fail("UNAUTHORIZED", "Login dulu.");
     const parsed = schema.safeParse(raw);
     if (!parsed.success) {

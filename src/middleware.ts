@@ -3,35 +3,40 @@ import { updateSession } from "@/lib/supabase/middleware";
 import type { AccountStatus, UserRole } from "@/types/database";
 
 const AUTH_PATHS = ["/login", "/forgot-password", "/reset-password"];
-const PUBLIC_PREFIXES = [
+/** No session refresh — pure public (saves Supabase getUser RTT every hit). */
+const SKIP_AUTH_PREFIXES = [
   "/i/",
   "/api/public/",
   "/api/cron/",
   "/api/webhooks/",
 ];
 
-function isPublic(pathname: string) {
-  if (AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    return true;
-  }
-  // PDF may use signed query; allow route (handler enforces auth/sig)
+function isAuthPath(pathname: string) {
+  return AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+function skipAuth(pathname: string) {
   if (pathname.startsWith("/api/invoices/") && pathname.endsWith("/pdf")) {
     return true;
   }
-  return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+  return SKIP_AUTH_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Fast path: public invoice / cron / webhooks — no Supabase round-trip
+  if (skipAuth(pathname)) {
+    return NextResponse.next();
+  }
+
   const { supabase, user, supabaseResponse } = await updateSession(request);
 
-  // Misconfigured env — do not crash edge
   if (!supabase) {
     return supabaseResponse;
   }
 
-  // Allow public routes without profile
-  if (isPublic(pathname)) {
+  if (isAuthPath(pathname)) {
     if (user && (pathname === "/login" || pathname === "/forgot-password")) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -95,9 +100,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except static assets and image optimizer.
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

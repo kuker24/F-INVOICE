@@ -287,6 +287,7 @@ export type ActivityLog = {
 };
 
 export type PublicInvoiceDTO = {
+  id: string;
   invoice_number: string;
   status: InvoiceStatus;
   issue_date: string;

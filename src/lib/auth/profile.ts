@@ -1,11 +1,13 @@
 import "server-only";
+import { cache } from "react";
 import type { Profile } from "@/types/database";
 import { createClient } from "@/lib/supabase/server";
 
-export async function getSessionProfile(): Promise<{
+/** One auth+profile round-trip per request (layout + page share). */
+export const getSessionProfile = cache(async (): Promise<{
   userId: string;
   profile: Profile;
-} | null> {
+} | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -20,7 +22,7 @@ export async function getSessionProfile(): Promise<{
 
   if (error || !profile) return null;
   return { userId: user.id, profile: profile as Profile };
-}
+});
 
 export function homePathForRole(role: Profile["role"]): string {
   return role === "USER" ? "/portal" : "/dashboard";

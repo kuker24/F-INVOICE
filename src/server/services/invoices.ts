@@ -435,7 +435,9 @@ export async function getPublicInvoiceByToken(
   const admin = createAdminClient();
   const { data: inv } = await admin
     .from("invoices")
-    .select("*")
+    .select(
+      "id,owner_id,customer_id,payment_method_id,invoice_number,status,issue_date,due_date,subtotal,discount_amount,tax_amount,additional_fee,total_amount,amount_paid,balance_due,allow_partial_payment,customer_notes,terms",
+    )
     .eq("public_token", token)
     .is("deleted_at", null)
     .maybeSingle();
@@ -445,54 +447,66 @@ export async function getPublicInvoiceByToken(
     throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
   }
 
-  // SENT → VIEWED once
+  // SENT → VIEWED once — run in parallel with related reads
   let displayStatus: InvoiceStatus = invoice.status;
-  if (invoice.status === "SENT") {
-    await admin.rpc("rpc_set_invoice_bypass");
-    await admin
-      .from("invoices")
-      .update({
-        status: "VIEWED",
-        viewed_at: new Date().toISOString(),
-      })
-      .eq("id", invoice.id)
-      .eq("status", "SENT");
-    displayStatus = "VIEWED";
-    await logActivity({
-      ownerId: invoice.owner_id,
-      action: "invoice.public_view",
-      entityType: "invoice",
-      entityId: invoice.id,
-      description: `Public view ${invoice.invoice_number}`,
-    });
-  }
+  const markViewed = invoice.status === "SENT";
+  if (markViewed) displayStatus = "VIEWED";
 
-  const { data: items } = await admin
+  const itemsQ = admin
     .from("invoice_items")
-    .select("*")
+    .select(
+      "name,description,quantity,unit,unit_price,discount_amount,tax_rate,tax_amount,line_total,position",
+    )
     .eq("invoice_id", invoice.id)
     .order("position");
-  const { data: customer } = await admin
+  const customerQ = admin
     .from("customers")
     .select("name")
     .eq("id", invoice.customer_id)
     .maybeSingle();
-  const { data: biz } = await admin
+  const bizQ = admin
     .from("business_settings")
     .select("business_name")
     .eq("owner_id", invoice.owner_id)
     .maybeSingle();
-  let payment_method: PublicInvoiceDTO["payment_method"] = null;
-  if (invoice.payment_method_id) {
-    const { data: pm } = await admin
-      .from("payment_methods")
-      .select("type,bank_name,account_number,account_holder,instructions")
-      .eq("id", invoice.payment_method_id)
-      .maybeSingle();
-    if (pm) payment_method = pm as PublicInvoiceDTO["payment_method"];
-  }
+  const pmQ = invoice.payment_method_id
+    ? admin
+        .from("payment_methods")
+        .select("type,bank_name,account_number,account_holder,instructions")
+        .eq("id", invoice.payment_method_id)
+        .maybeSingle()
+    : Promise.resolve({ data: null as PublicInvoiceDTO["payment_method"] });
+  const viewQ = markViewed
+    ? (async () => {
+        await admin.rpc("rpc_set_invoice_bypass");
+        await admin
+          .from("invoices")
+          .update({
+            status: "VIEWED",
+            viewed_at: new Date().toISOString(),
+          })
+          .eq("id", invoice.id)
+          .eq("status", "SENT");
+        await logActivity({
+          ownerId: invoice.owner_id,
+          action: "invoice.public_view",
+          entityType: "invoice",
+          entityId: invoice.id,
+          description: `Public view ${invoice.invoice_number}`,
+        });
+      })()
+    : Promise.resolve();
+
+  const [{ data: items }, { data: customer }, { data: biz }, { data: pm }] =
+    await Promise.all([itemsQ, customerQ, bizQ, pmQ, viewQ]).then((r) => [
+      r[0],
+      r[1],
+      r[2],
+      r[3],
+    ] as const);
 
   return {
+    id: invoice.id,
     invoice_number: invoice.invoice_number,
     status: displayStatus,
     issue_date: invoice.issue_date,
@@ -521,7 +535,7 @@ export async function getPublicInvoiceByToken(
       tax_amount: it.tax_amount,
       line_total: it.line_total,
     })),
-    payment_method,
+    payment_method: (pm as PublicInvoiceDTO["payment_method"]) ?? null,
   };
 }
 

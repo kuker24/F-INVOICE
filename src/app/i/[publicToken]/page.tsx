@@ -45,23 +45,11 @@ export default async function PublicInvoicePage({
   }
 
   const canPay = OPEN_FOR_PAYMENT.includes(dto.status) && dto.balance_due > 0;
-  let pdfHref: string | null = null;
-  try {
-    // need invoice id for pdf — resolve via admin token path optional; use public API token only for confirm
-    // PDF via signed URL requires invoice id; fetch via service side channel
-    const { createAdminClient } = await import("@/lib/supabase/admin");
-    const admin = createAdminClient();
-    const { data: inv } = await admin
-      .from("invoices")
-      .select("id")
-      .eq("public_token", publicToken)
-      .maybeSingle();
-    if (inv?.id) {
-      pdfHref = makePdfUrl(getPublicEnv().NEXT_PUBLIC_APP_URL, inv.id as string, publicToken);
-    }
-  } catch {
-    pdfHref = null;
-  }
+  const pdfHref = makePdfUrl(
+    getPublicEnv().NEXT_PUBLIC_APP_URL,
+    dto.id,
+    publicToken,
+  );
 
   return (
     <div className="min-h-screen bg-canvas px-4 py-10">

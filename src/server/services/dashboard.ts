@@ -5,42 +5,55 @@ import { ownerIdOf } from "@/lib/auth/owner";
 import { assertStaff } from "@/lib/permissions/assert";
 import { ensureBusinessSettings } from "@/server/services/settings";
 
+const OPEN = ["SENT", "VIEWED", "PARTIALLY_PAID", "OVERDUE"] as const;
+
 export async function getDashboardStats(profile: Profile) {
   assertStaff(profile);
   const ownerId = ownerIdOf(profile);
-  const settings = await ensureBusinessSettings(ownerId);
   const admin = createAdminClient();
 
-  const { count: customerCount } = await admin
+  const settingsP = ensureBusinessSettings(ownerId);
+  const customersP = admin
     .from("customers")
     .select("id", { count: "exact", head: true })
     .eq("owner_id", ownerId)
     .is("deleted_at", null);
-
-  const { data: invoices } = await admin
+  // Only money columns needed — not full invoice rows
+  const invoicesP = admin
     .from("invoices")
-    .select("status,total_amount,balance_due,amount_paid")
+    .select("status,total_amount,balance_due")
     .eq("owner_id", ownerId)
     .is("deleted_at", null);
 
-  const rows = invoices ?? [];
-  const open = rows.filter((r) =>
-    ["SENT", "VIEWED", "PARTIALLY_PAID", "OVERDUE"].includes(r.status as string),
-  );
-  const overdue = rows.filter((r) => r.status === "OVERDUE");
-  const paidSum = rows
-    .filter((r) => r.status === "PAID")
-    .reduce((s, r) => s + Number(r.total_amount), 0);
-  const outstanding = open.reduce((s, r) => s + Number(r.balance_due), 0);
+  const [settings, customersRes, invoicesRes] = await Promise.all([
+    settingsP,
+    customersP,
+    invoicesP,
+  ]);
+
+  const rows = invoicesRes.data ?? [];
+  let openInvoices = 0;
+  let overdueInvoices = 0;
+  let outstanding = 0;
+  let paidSum = 0;
+  for (const r of rows) {
+    const st = r.status as string;
+    if ((OPEN as readonly string[]).includes(st)) {
+      openInvoices += 1;
+      outstanding += Number(r.balance_due);
+    }
+    if (st === "OVERDUE") overdueInvoices += 1;
+    if (st === "PAID") paidSum += Number(r.total_amount);
+  }
 
   const showRevenue =
     profile.role === "DEVELOPER" || settings.show_revenue_to_admin;
 
   return {
-    customers: customerCount ?? 0,
+    customers: customersRes.count ?? 0,
     invoices: rows.length,
-    openInvoices: open.length,
-    overdueInvoices: overdue.length,
+    openInvoices,
+    overdueInvoices,
     outstanding,
     revenue: showRevenue ? paidSum : null,
     showRevenue,

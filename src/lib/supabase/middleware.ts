@@ -8,6 +8,11 @@ export type SessionContext = {
   supabaseResponse: NextResponse;
 };
 
+/**
+ * Hobby speed: getSession() reads JWT from cookie (no Auth network RTT).
+ * getUser() reserved for mutations (requireVerifiedProfile).
+ * Tradeoff: revoked sessions valid until JWT exp (~1h typical).
+ */
 export async function updateSession(
   request: NextRequest,
 ): Promise<SessionContext> {
@@ -16,7 +21,6 @@ export async function updateSession(
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Missing env: allow request through without session (build/dev misconfig)
   if (!url || !anon) {
     return {
       supabase: null as unknown as SupabaseClient,
@@ -43,8 +47,12 @@ export async function updateSession(
   });
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  return { supabase, user, supabaseResponse };
+  return {
+    supabase,
+    user: session?.user ?? null,
+    supabaseResponse,
+  };
 }

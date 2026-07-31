@@ -123,6 +123,9 @@ export async function loginAction(
 export async function logoutAction(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  const { cookies } = await import("next/headers");
+  const jar = await cookies();
+  jar.set("finv_id", "", { httpOnly: true, path: "/", maxAge: 0 });
   redirect("/login");
 }
 

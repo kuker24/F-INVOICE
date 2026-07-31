@@ -24,10 +24,12 @@ export const getSessionProfile = cache(async (): Promise<{
     };
   }
 
+  // Read path: getSession (local JWT) — mutations use requireVerifiedProfile/getUser.
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
   if (!user) return null;
 
   const { data: profile, error } = await supabase
@@ -42,7 +44,7 @@ export const getSessionProfile = cache(async (): Promise<{
   return { userId: user.id, profile: profile as Profile };
 });
 
-/** Mutations: always re-verify JWT (never trust middleware headers alone). */
+/** Mutations: network JWT re-verify (never trust cookie/session alone). */
 export async function requireVerifiedProfile(): Promise<{
   userId: string;
   profile: Profile;

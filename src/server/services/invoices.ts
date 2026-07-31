@@ -1,5 +1,6 @@
 import "server-only";
 import { randomBytes } from "crypto";
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -433,51 +434,63 @@ export async function getPublicInvoiceByToken(
     throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
   }
   const admin = createAdminClient();
-  const { data: inv } = await admin
+  type Row = {
+    id: string;
+    owner_id: string;
+    customer_id: string;
+    payment_method_id: string | null;
+    invoice_number: string;
+    status: InvoiceStatus;
+    issue_date: string;
+    due_date: string;
+    subtotal: number;
+    discount_amount: number;
+    tax_amount: number;
+    additional_fee: number;
+    total_amount: number;
+    amount_paid: number;
+    balance_due: number;
+    allow_partial_payment: boolean;
+    customer_notes: string | null;
+    terms: string | null;
+    invoice_items?: InvoiceItem[] | null;
+    customers?: { name: string } | { name: string }[] | null;
+    payment_methods?:
+      | PublicInvoiceDTO["payment_method"]
+      | PublicInvoiceDTO["payment_method"][]
+      | null;
+  };
+
+  // Pass 1: embed invoice+items+customer+pm (1 RTT). Biz name needs owner_id — second small read.
+  const { data: inv, error } = await admin
     .from("invoices")
     .select(
-      "id,owner_id,customer_id,payment_method_id,invoice_number,status,issue_date,due_date,subtotal,discount_amount,tax_amount,additional_fee,total_amount,amount_paid,balance_due,allow_partial_payment,customer_notes,terms",
+      `
+      id,owner_id,customer_id,payment_method_id,invoice_number,status,
+      issue_date,due_date,subtotal,discount_amount,tax_amount,additional_fee,
+      total_amount,amount_paid,balance_due,allow_partial_payment,customer_notes,terms,
+      invoice_items(name,description,quantity,unit,unit_price,discount_amount,tax_rate,tax_amount,line_total,position),
+      customers(name),
+      payment_methods(type,bank_name,account_number,account_holder,instructions)
+    `,
     )
     .eq("public_token", token)
     .is("deleted_at", null)
     .maybeSingle();
-  if (!inv) throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
-  const invoice = inv as Invoice;
+  if (error || !inv) {
+    throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
+  }
+  const invoice = inv as unknown as Row;
   if (invoice.status === "DRAFT") {
     throw new AppError("NOT_FOUND", "Invoice tidak ditemukan.");
   }
 
-  // SENT → VIEWED once — run in parallel with related reads
   let displayStatus: InvoiceStatus = invoice.status;
-  const markViewed = invoice.status === "SENT";
-  if (markViewed) displayStatus = "VIEWED";
-
-  const itemsQ = admin
-    .from("invoice_items")
-    .select(
-      "name,description,quantity,unit,unit_price,discount_amount,tax_rate,tax_amount,line_total,position",
-    )
-    .eq("invoice_id", invoice.id)
-    .order("position");
-  const customerQ = admin
-    .from("customers")
-    .select("name")
-    .eq("id", invoice.customer_id)
-    .maybeSingle();
-  const bizQ = admin
-    .from("business_settings")
-    .select("business_name")
-    .eq("owner_id", invoice.owner_id)
-    .maybeSingle();
-  const pmQ = invoice.payment_method_id
-    ? admin
-        .from("payment_methods")
-        .select("type,bank_name,account_number,account_holder,instructions")
-        .eq("id", invoice.payment_method_id)
-        .maybeSingle()
-    : Promise.resolve({ data: null as PublicInvoiceDTO["payment_method"] });
-  const viewQ = markViewed
-    ? (async () => {
+  if (invoice.status === "SENT") {
+    displayStatus = "VIEWED";
+    // Don't block HTML on status write + activity log
+    after(async () => {
+      try {
         await admin.rpc("rpc_set_invoice_bypass");
         await admin
           .from("invoices")
@@ -494,21 +507,65 @@ export async function getPublicInvoiceByToken(
           entityId: invoice.id,
           description: `Public view ${invoice.invoice_number}`,
         });
-      })()
-    : Promise.resolve();
+      } catch {
+        /* best-effort */
+      }
+    });
+  }
 
-  const [{ data: items }, { data: customer }, { data: biz }, { data: pm }] =
-    await Promise.all([itemsQ, customerQ, bizQ, pmQ, viewQ]).then((r) => [
-      r[0],
-      r[1],
-      r[2],
-      r[3],
-    ] as const);
+  const { data: biz } = await admin
+    .from("business_settings")
+    .select("business_name")
+    .eq("owner_id", invoice.owner_id)
+    .maybeSingle();
 
+  const items = [...(invoice.invoice_items ?? [])].sort(
+    (a, b) => (a.position ?? 0) - (b.position ?? 0),
+  );
+  return buildPublicDto(
+    invoice,
+    displayStatus,
+    items,
+    biz?.business_name as string | undefined,
+  );
+}
+
+function buildPublicDto(
+  invoice: {
+    id: string;
+    invoice_number: string;
+    issue_date: string;
+    due_date: string;
+    subtotal: number;
+    discount_amount: number;
+    tax_amount: number;
+    additional_fee: number;
+    total_amount: number;
+    amount_paid: number;
+    balance_due: number;
+    allow_partial_payment: boolean;
+    customer_notes: string | null;
+    terms: string | null;
+    customers?: { name: string } | { name: string }[] | null;
+    payment_methods?:
+      | PublicInvoiceDTO["payment_method"]
+      | PublicInvoiceDTO["payment_method"][]
+      | null;
+  },
+  status: InvoiceStatus,
+  items: InvoiceItem[],
+  businessName?: string,
+): PublicInvoiceDTO {
+  const cust = invoice.customers;
+  const customer_name = Array.isArray(cust)
+    ? (cust[0]?.name ?? "")
+    : (cust?.name ?? "");
+  const pm = invoice.payment_methods;
+  const payment_method = (Array.isArray(pm) ? pm[0] : pm) ?? null;
   return {
     id: invoice.id,
     invoice_number: invoice.invoice_number,
-    status: displayStatus,
+    status,
     issue_date: invoice.issue_date,
     due_date: invoice.due_date,
     currency: "IDR",
@@ -522,9 +579,9 @@ export async function getPublicInvoiceByToken(
     allow_partial_payment: invoice.allow_partial_payment,
     customer_notes: invoice.customer_notes,
     terms: invoice.terms,
-    customer_name: (customer?.name as string) ?? "",
-    business_name: (biz?.business_name as string) ?? "F-INVOICE",
-    items: ((items ?? []) as InvoiceItem[]).map((it) => ({
+    customer_name,
+    business_name: businessName ?? "F-INVOICE",
+    items: items.map((it) => ({
       name: it.name,
       description: it.description,
       quantity: it.quantity,
@@ -535,7 +592,7 @@ export async function getPublicInvoiceByToken(
       tax_amount: it.tax_amount,
       line_total: it.line_total,
     })),
-    payment_method: (pm as PublicInvoiceDTO["payment_method"]) ?? null,
+    payment_method,
   };
 }
 

@@ -19,7 +19,6 @@ import {
 } from "@/lib/auth/identity-cookie";
 
 const AUTH_PATHS = ["/login", "/forgot-password", "/reset-password"];
-/** No session — pure public. */
 const SKIP_AUTH_PREFIXES = [
   "/i/",
   "/api/public/",
@@ -50,7 +49,7 @@ type ProfileLite = {
   phone: string | null;
 };
 
-function withIdentity(
+async function withIdentity(
   request: NextRequest,
   base: NextResponse,
   profile: ProfileLite,
@@ -76,7 +75,7 @@ function withIdentity(
   if (setIdCookie) {
     res.cookies.set(
       IDENTITY_COOKIE,
-      encodeIdentityCookie({
+      await encodeIdentityCookie({
         id: profile.id,
         role: profile.role,
         status: profile.status,
@@ -126,7 +125,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Auth pages: only check session if cookie present (skip Supabase for cold visitors).
   if (isAuthPath(pathname)) {
     const hasSb = request.cookies
       .getAll()
@@ -137,7 +135,7 @@ export async function middleware(request: NextRequest) {
     const { user, supabaseResponse, supabase } = await updateSession(request);
     if (!supabase) return supabaseResponse;
     if (user && (pathname === "/login" || pathname === "/forgot-password")) {
-      const cached = decodeIdentityCookie(
+      const cached = await decodeIdentityCookie(
         request.cookies.get(IDENTITY_COOKIE)?.value,
       );
       if (cached && cached.id === user.id && cached.status === "ACTIVE") {
@@ -158,7 +156,7 @@ export async function middleware(request: NextRequest) {
         });
         redir.cookies.set(
           IDENTITY_COOKIE,
-          encodeIdentityCookie({
+          await encodeIdentityCookie({
             id: profile.id,
             role: profile.role,
             status: profile.status,
@@ -176,12 +174,11 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Protected: try signed identity cookie first (0 DB, 0 Auth network).
-  const cached = decodeIdentityCookie(
+  // Protected: signed identity cookie first (no profiles DB).
+  const cached = await decodeIdentityCookie(
     request.cookies.get(IDENTITY_COOKIE)?.value,
   );
   if (cached && cached.status === "ACTIVE") {
-    // Still need JWT present — cheap local getSession
     const { user, supabaseResponse, supabase } = await updateSession(request);
     if (!supabase) return supabaseResponse;
     if (!user) {

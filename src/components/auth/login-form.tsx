@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -14,9 +14,15 @@ export function LoginForm() {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  // Block native GET until React hydrates (Hobby cold can race click).
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(true);
+  }, []);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!ready || pending) return;
     setError(null);
     const fd = new FormData(e.currentTarget);
     const payload = {
@@ -37,7 +43,13 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <form
+      method="post"
+      action="#"
+      onSubmit={onSubmit}
+      className="flex flex-col gap-4"
+      noValidate
+    >
       <div className="space-y-1.5">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -101,11 +113,16 @@ export function LoginForm() {
         </p>
       ) : null}
 
-      <Button type="submit" disabled={pending} className="w-full">
-        {pending ? (
+      <Button
+        type="submit"
+        disabled={!ready || pending}
+        className="w-full"
+        data-ready={ready ? "1" : "0"}
+      >
+        {pending || !ready ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Masuk…
+            {ready ? "Masuk…" : "Memuat…"}
           </>
         ) : (
           "Masuk"

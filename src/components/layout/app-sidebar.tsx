@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
@@ -85,15 +85,39 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const menuId = useId();
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+        toggleRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    // First focusable in panel (brand link).
+    const focusable = panelRef.current?.querySelector<HTMLElement>(
+      "a, button",
+    );
+    focusable?.focus();
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
 
   return (
     <>
       <div className="flex items-center gap-2 border-b border-hairline bg-paper px-3 py-2 md:hidden">
         <Button
+          ref={toggleRef}
           type="button"
           variant="ghost"
           size="icon"
           aria-label={open ? "Tutup menu" : "Buka menu"}
+          aria-expanded={open}
+          aria-controls={menuId}
           onClick={() => setOpen((v) => !v)}
         >
           {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -107,9 +131,19 @@ export function AppSidebar({
             type="button"
             className="absolute inset-0 bg-ink/20"
             aria-label="Tutup overlay"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              toggleRef.current?.focus();
+            }}
           />
-          <aside className="relative z-50 flex h-full w-60 flex-col border-r border-hairline bg-surface-alt shadow-subtle">
+          <aside
+            id={menuId}
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu navigasi"
+            className="relative z-50 flex h-full w-60 flex-col border-r border-hairline bg-surface-alt shadow-subtle"
+          >
             <div className="px-5 py-5">
               <Link
                 href={items[0]?.href ?? "/"}
@@ -119,7 +153,11 @@ export function AppSidebar({
                 {brand}
               </Link>
             </div>
-            <NavLinks items={items} pathname={pathname} onNavigate={() => setOpen(false)} />
+            <NavLinks
+              items={items}
+              pathname={pathname}
+              onNavigate={() => setOpen(false)}
+            />
           </aside>
         </div>
       ) : null}

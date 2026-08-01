@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Toaster } from "sonner";
+import { Geist } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
+  // Money uses tabular-nums CSS, not a second face — skip Geist Mono (~23–30KB).
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -36,13 +33,12 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-canvas font-sans text-ink antialiased`}
+        className={`${geistSans.variable} min-h-screen bg-canvas font-sans text-ink antialiased`}
       >
         <a href="#main" className="skip-link">
           Loncat ke konten
         </a>
         {children}
-        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );

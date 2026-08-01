@@ -5,12 +5,27 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Badge, statusTone } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { formatIdr } from "@/lib/money/invoice-math";
-import { PublicPaymentForm } from "@/components/forms/public-payment-form";
+import nextDynamic from "next/dynamic";
 import { PublicViewBeacon } from "@/components/invoice/public-view-beacon";
 import { OPEN_FOR_PAYMENT } from "@/lib/invoice/status";
 import { getPublicEnv } from "@/config/public-env";
 import { invoiceShareText, whatsappShareUrl } from "@/lib/share/whatsapp";
 import { cn } from "@/lib/utils";
+
+/** Client pay form — split so closed invoices skip the chunk. */
+const PublicPaymentForm = nextDynamic(
+  () =>
+    import("@/components/forms/public-payment-form").then(
+      (m) => m.PublicPaymentForm,
+    ),
+  {
+    loading: () => (
+      <p className="text-sm text-mid-gray" aria-busy="true">
+        Memuat form…
+      </p>
+    ),
+  },
+);
 
 /** ISR/CDN — no cookies/headers/after in render; VIEWED via client beacon. */
 export const revalidate = 60;

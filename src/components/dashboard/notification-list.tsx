@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   markAllNotificationsReadAction,
   markNotificationReadAction,
@@ -24,19 +24,31 @@ export function NotificationList({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [status, setStatus] = useState<string | null>(null);
   const unread = notes.filter((n) => !n.is_read).length;
 
   function markAll() {
+    setStatus(null);
     start(async () => {
-      await markAllNotificationsReadAction();
+      const res = await markAllNotificationsReadAction();
+      if (res && "success" in res && res.success === false) {
+        setStatus(res.error?.message ?? "Gagal menandai dibaca");
+        return;
+      }
+      setStatus("Semua ditandai dibaca");
       router.refresh();
     });
   }
 
   function openNote(id: string, isRead: boolean) {
     if (isRead) return;
+    setStatus(null);
     start(async () => {
-      await markNotificationReadAction(id);
+      const res = await markNotificationReadAction(id);
+      if (res && "success" in res && res.success === false) {
+        setStatus(res.error?.message ?? "Gagal menandai dibaca");
+        return;
+      }
       router.refresh();
     });
   }
@@ -64,6 +76,14 @@ export function NotificationList({
           </Button>
         ) : null}
       </div>
+      <p className="sr-only" role="status" aria-live="polite">
+        {status ?? ""}
+      </p>
+      {status && !status.startsWith("Semua") ? (
+        <p className="mb-2 text-sm text-ember" role="alert">
+          {status}
+        </p>
+      ) : null}
       {notes.length ? (
         <ul className="divide-y divide-hairline text-sm">
           {notes.map((n) => {

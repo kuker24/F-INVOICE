@@ -3,7 +3,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile } from "@/types/database";
 import { ownerIdOf } from "@/lib/auth/owner";
 import { assertStaff } from "@/lib/permissions/assert";
-import { ensureBusinessSettings } from "@/server/services/settings";
 
 const OPEN = ["SENT", "VIEWED", "PARTIALLY_PAID", "OVERDUE"] as const;
 
@@ -12,11 +11,23 @@ export async function getDashboardStats(profile: Profile) {
   const ownerId = ownerIdOf(profile);
   const admin = createAdminClient();
   const open = [...OPEN];
+  const isDeveloper = profile.role === "DEVELOPER";
 
-  // Parallel head counts + narrow money cols only (no full invoice rows).
-  const [settings, customersRes, openCnt, overdueCnt, openMoney, paidMoney, pendingPay] =
+  // PostgREST host disallows aggregate functions — sum narrow money cols in app.
+  // Skip settings read for DEVELOPER; skip paid rows when revenue hidden.
+  const [settings, customersRes, openCnt, overdueCnt, openMoney, pendingPay] =
     await Promise.all([
-      ensureBusinessSettings(ownerId),
+      isDeveloper
+        ? Promise.resolve(null)
+        : admin
+            .from("business_settings")
+            .select("show_revenue_to_admin")
+            .eq("owner_id", ownerId)
+            .maybeSingle()
+            .then(
+              (r) =>
+                r.data as { show_revenue_to_admin?: boolean } | null,
+            ),
       admin
         .from("customers")
         .select("id", { count: "exact", head: true })
@@ -41,12 +52,6 @@ export async function getDashboardStats(profile: Profile) {
         .is("deleted_at", null)
         .in("status", open),
       admin
-        .from("invoices")
-        .select("total_amount")
-        .eq("owner_id", ownerId)
-        .is("deleted_at", null)
-        .eq("status", "PAID"),
-      admin
         .from("payments")
         .select("id", { count: "exact", head: true })
         .eq("owner_id", ownerId)
@@ -60,12 +65,18 @@ export async function getDashboardStats(profile: Profile) {
   }
 
   const showRevenue =
-    profile.role === "DEVELOPER" || settings.show_revenue_to_admin;
+    isDeveloper || Boolean(settings?.show_revenue_to_admin);
 
   let paidSum: number | null = null;
   if (showRevenue) {
+    const { data: paidRows } = await admin
+      .from("invoices")
+      .select("total_amount")
+      .eq("owner_id", ownerId)
+      .is("deleted_at", null)
+      .eq("status", "PAID");
     paidSum = 0;
-    for (const r of paidMoney.data ?? []) {
+    for (const r of paidRows ?? []) {
       paidSum += Number(r.total_amount);
     }
   }

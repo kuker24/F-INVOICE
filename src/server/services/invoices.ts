@@ -172,6 +172,30 @@ export async function createInvoice(profile: Profile, input: InvoiceWriteInput) 
     year,
   );
   const admin = createAdminClient();
+
+  let templateId = input.template_id ?? null;
+  let paymentMethodId = input.payment_method_id ?? null;
+  if (!templateId) {
+    const { data: defTmpl } = await admin
+      .from("invoice_templates")
+      .select("id")
+      .eq("owner_id", ownerId)
+      .eq("is_default", true)
+      .eq("status", "ACTIVE")
+      .maybeSingle();
+    templateId = (defTmpl?.id as string) ?? null;
+  }
+  if (!paymentMethodId) {
+    const { data: defPm } = await admin
+      .from("payment_methods")
+      .select("id")
+      .eq("owner_id", ownerId)
+      .eq("is_default", true)
+      .eq("status", "ACTIVE")
+      .maybeSingle();
+    paymentMethodId = (defPm?.id as string) ?? null;
+  }
+
   // bypass not needed for insert
   const { data: inv, error } = await admin
     .from("invoices")
@@ -192,8 +216,8 @@ export async function createInvoice(profile: Profile, input: InvoiceWriteInput) 
       amount_paid: 0,
       balance_due: toNumber(totals.totalAmount),
       allow_partial_payment: input.allow_partial_payment ?? true,
-      template_id: input.template_id ?? null,
-      payment_method_id: input.payment_method_id ?? null,
+      template_id: templateId,
+      payment_method_id: paymentMethodId,
       customer_notes: input.customer_notes ?? settings.default_notes,
       internal_notes: input.internal_notes ?? null,
       terms: input.terms ?? settings.default_terms,
@@ -508,6 +532,22 @@ async function loadPublicInvoiceUncached(token: string): Promise<CachedPublic> {
     .eq("owner_id", invoice.owner_id)
     .maybeSingle();
 
+  // Fallback to owner default payment method when invoice has none (matches PDF).
+  let payment_methods = invoice.payment_methods;
+  const hasPm = Array.isArray(payment_methods)
+    ? payment_methods.length > 0
+    : !!payment_methods;
+  if (!hasPm) {
+    const { data: defPm } = await admin
+      .from("payment_methods")
+      .select("type,bank_name,account_number,account_holder,instructions")
+      .eq("owner_id", invoice.owner_id)
+      .eq("is_default", true)
+      .eq("status", "ACTIVE")
+      .maybeSingle();
+    if (defPm) payment_methods = defPm as PublicRow["payment_methods"];
+  }
+
   const displayStatus: InvoiceStatus =
     invoice.status === "SENT" ? "VIEWED" : invoice.status;
   const items = [...(invoice.invoice_items ?? [])].sort(
@@ -515,7 +555,7 @@ async function loadPublicInvoiceUncached(token: string): Promise<CachedPublic> {
   );
   return {
     dto: buildPublicDto(
-      invoice,
+      { ...invoice, payment_methods },
       displayStatus,
       items,
       biz?.business_name as string | undefined,

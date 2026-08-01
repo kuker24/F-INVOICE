@@ -220,18 +220,60 @@ export async function generateSubscriptionInvoice(
     };
   }
 
+  // Prefer explicit sub settings; fall back to owner defaults so PDF/public match system.
+  let templateId = subscription.template_id;
+  let paymentMethodId = subscription.payment_method_id;
+  if (!templateId) {
+    const { data: defTmpl } = await admin
+      .from("invoice_templates")
+      .select("id")
+      .eq("owner_id", subscription.owner_id)
+      .eq("is_default", true)
+      .eq("status", "ACTIVE")
+      .maybeSingle();
+    templateId = (defTmpl?.id as string) ?? null;
+  }
+  if (!paymentMethodId) {
+    const { data: defPm } = await admin
+      .from("payment_methods")
+      .select("id")
+      .eq("owner_id", subscription.owner_id)
+      .eq("is_default", true)
+      .eq("status", "ACTIVE")
+      .maybeSingle();
+    paymentMethodId = (defPm?.id as string) ?? null;
+  }
+
+  let itemName = subscription.name;
+  let itemDescription =
+    subscription.description ??
+    `Langganan ${subscription.billing_cycle} · ${periodStart} s/d ${periodEnd}`;
+  if (subscription.product_id) {
+    const { data: product } = await admin
+      .from("products")
+      .select("name,description")
+      .eq("id", subscription.product_id)
+      .maybeSingle();
+    if (product?.name) {
+      itemName = product.name as string;
+      itemDescription =
+        (product.description as string | null) ??
+        `${subscription.name} · ${periodStart} s/d ${periodEnd}`;
+    }
+  }
+
   const inv = await createInvoice(actor, {
     customer_id: subscription.customer_id,
     invoice_type: "SUBSCRIPTION",
     issue_date: periodStart,
     due_date: addDays(periodStart, subscription.due_days),
-    template_id: subscription.template_id,
-    payment_method_id: subscription.payment_method_id,
+    template_id: templateId,
+    payment_method_id: paymentMethodId,
     items: [
       {
         product_id: subscription.product_id,
-        name: subscription.name,
-        description: subscription.description,
+        name: itemName,
+        description: itemDescription,
         quantity: 1,
         unit_price: subscription.price,
         discount_amount: 0,

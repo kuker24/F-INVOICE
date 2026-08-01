@@ -41,7 +41,7 @@ export default async function PortalPaymentsPage() {
           />
         ) : (
           <p className="text-sm text-mid-gray">
-            Tidak ada tagihan open. Invoice baru akan muncul di sini.
+            Tidak ada tagihan terbuka. Invoice baru akan muncul di sini.
           </p>
         )}
       </Card>

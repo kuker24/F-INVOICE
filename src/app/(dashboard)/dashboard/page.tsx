@@ -91,6 +91,19 @@ async function DashboardStats({ profile }: { profile: Profile }) {
     );
   }
 
+  if (stats.customers > 0 && stats.openInvoices === 0 && stats.outstanding === 0 && (stats.revenue ?? 0) === 0) {
+    return (
+      <Card className="p-0">
+        <EmptyState
+          title="Siap buat invoice pertama"
+          description={`${stats.customers} pelanggan sudah ada. Buat draft invoice untuk mulai piutang.`}
+          actionHref="/invoices/new"
+          actionLabel="+ Invoice"
+        />
+      </Card>
+    );
+  }
+
   return (
     <div
       className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
@@ -113,9 +126,9 @@ async function DashboardStats({ profile }: { profile: Profile }) {
       </StatLink>
 
       <StatLink
-        href="/invoices"
+        href="/invoices?status=OPEN"
         label="Piutang"
-        hint="Semua invoice terbuka"
+        hint="Invoice terbuka (AR)"
       >
         <p className="text-3xl font-semibold tabular-nums tracking-tight text-ink">
           {formatIdr(stats.outstanding)}
@@ -123,7 +136,7 @@ async function DashboardStats({ profile }: { profile: Profile }) {
       </StatLink>
 
       <StatLink
-        href="/invoices"
+        href="/invoices?status=OPEN"
         label="Invoice terbuka"
         hint={`${stats.openInvoices} dokumen`}
       >

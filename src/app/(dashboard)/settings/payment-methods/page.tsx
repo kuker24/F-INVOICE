@@ -21,14 +21,28 @@ export default async function PaymentMethodsPage() {
         <p className="text-sm text-mid-gray">
           {rows.length} metode · tampil di invoice publik
         </p>
-        <p className="mt-1 text-xs text-mid-gray">
+        <nav
+          aria-label="Sub-pengaturan"
+          className="mt-3 flex flex-wrap gap-2 text-sm"
+        >
           <Link
             href="/settings/business"
-            className="underline-offset-2 hover:underline"
+            className="rounded-[18px] bg-canvas px-3 py-1.5 font-medium text-ink hover:bg-hairline/60"
           >
-            ← Pengaturan bisnis
+            Profil
           </Link>
-        </p>
+          <span className="rounded-[18px] bg-ink px-3 py-1.5 font-medium text-surface-alt">
+            Metode bayar
+          </span>
+          {canWrite ? (
+            <Link
+              href="/settings/invoice-numbering"
+              className="rounded-[18px] bg-canvas px-3 py-1.5 font-medium text-ink hover:bg-hairline/60"
+            >
+              Penomoran
+            </Link>
+          ) : null}
+        </nav>
       </div>
       {canWrite ? (
         <Card>
@@ -63,7 +77,7 @@ export default async function PaymentMethodsPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  {r.is_default ? <Badge>Default</Badge> : null}
+                  {r.is_default ? <Badge>Utama</Badge> : null}
                   <Badge tone="muted">{r.status}</Badge>
                 </div>
               </li>

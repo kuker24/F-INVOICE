@@ -105,9 +105,16 @@ async function nextNumber(ownerId: string, prefix: string, year: number) {
   return data as string;
 }
 
+const OPEN_STATUSES: InvoiceStatus[] = [
+  "SENT",
+  "VIEWED",
+  "PARTIALLY_PAID",
+  "OVERDUE",
+];
+
 export async function listInvoices(
   profile: Profile,
-  opts?: { status?: InvoiceStatus; q?: string },
+  opts?: { status?: InvoiceStatus | "OPEN"; q?: string },
 ) {
   assertStaff(profile);
   const supabase = await createClient();
@@ -118,7 +125,11 @@ export async function listInvoices(
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
-  if (opts?.status) query = query.eq("status", opts.status);
+  if (opts?.status === "OPEN") {
+    query = query.in("status", OPEN_STATUSES);
+  } else if (opts?.status) {
+    query = query.eq("status", opts.status);
+  }
   const term = sanitizeSearch(opts?.q);
   if (term) {
     query = query.ilike("invoice_number", `%${term}%`);

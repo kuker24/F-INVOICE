@@ -13,6 +13,7 @@ import { ExportCsvButton } from "@/components/invoice/export-csv-button";
 import type { InvoiceStatus } from "@/types/database";
 
 const STATUS_OPTS = [
+  { value: "OPEN", label: "Terbuka" },
   { value: "DRAFT", label: "DRAFT" },
   { value: "SENT", label: "SENT" },
   { value: "VIEWED", label: "VIEWED" },
@@ -21,6 +22,8 @@ const STATUS_OPTS = [
   { value: "OVERDUE", label: "OVERDUE" },
   { value: "CANCELLED", label: "CANCELLED" },
 ];
+
+type InvoiceFilter = InvoiceStatus | "OPEN";
 
 export default async function InvoicesPage({
   searchParams,
@@ -32,9 +35,13 @@ export default async function InvoicesPage({
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
   const status = sp.status?.trim() ?? "";
+  const statusFilter =
+    status === "OPEN" || STATUS_OPTS.some((o) => o.value === status)
+      ? (status as InvoiceFilter)
+      : undefined;
   const rows = await listInvoices(session.profile, {
     q: q || undefined,
-    status: (status as InvoiceStatus) || undefined,
+    status: statusFilter,
   });
   return (
     <div className="mx-auto max-w-[1280px] space-y-4">

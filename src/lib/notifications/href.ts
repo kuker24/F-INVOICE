@@ -10,7 +10,9 @@ export function notificationHref(
     case "invoice":
       return portal ? `/portal/invoices` : `/invoices/${targetId}`;
     case "payment":
-      return portal ? `/portal/payments` : `/payments`;
+      return portal
+        ? `/portal/payments`
+        : `/payments?status=PENDING`;
     case "subscription":
       return portal ? `/portal/subscriptions` : `/subscriptions`;
     case "customer":

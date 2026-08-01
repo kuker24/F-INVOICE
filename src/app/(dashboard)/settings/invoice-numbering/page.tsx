@@ -16,14 +16,26 @@ export default async function NumberingPage() {
         <p className="text-sm text-mid-gray">
           Format nomor dokumen (yearly, row-lock)
         </p>
-        <p className="mt-1 text-xs text-mid-gray">
+        <nav
+          aria-label="Sub-pengaturan"
+          className="mt-3 flex flex-wrap gap-2 text-sm"
+        >
           <Link
             href="/settings/business"
-            className="underline-offset-2 hover:underline"
+            className="rounded-[18px] bg-canvas px-3 py-1.5 font-medium text-ink hover:bg-hairline/60"
           >
-            ← Pengaturan bisnis
+            Profil
           </Link>
-        </p>
+          <Link
+            href="/settings/payment-methods"
+            className="rounded-[18px] bg-canvas px-3 py-1.5 font-medium text-ink hover:bg-hairline/60"
+          >
+            Metode bayar
+          </Link>
+          <span className="rounded-[18px] bg-ink px-3 py-1.5 font-medium text-surface-alt">
+            Penomoran
+          </span>
+        </nav>
       </div>
       <Card>
         <CardTitle>Format aktif</CardTitle>

@@ -152,7 +152,7 @@ export default async function PublicInvoicePage({
                 className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
                 href={pdfHref}
               >
-                Download PDF
+                Unduh PDF
               </a>
             ) : null}
           </div>

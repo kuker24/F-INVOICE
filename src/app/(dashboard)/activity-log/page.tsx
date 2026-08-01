@@ -12,7 +12,7 @@ export default async function ActivityLogPage() {
   return (
     <div className="mx-auto max-w-[1280px] space-y-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Activity log</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Log aktivitas</h1>
         <p className="text-sm text-mid-gray">
           {rows.length} entri terbaru · audit aksi staff
         </p>
@@ -29,9 +29,9 @@ export default async function ActivityLogPage() {
               <tr>
                 <Th>Waktu</Th>
                 <Th>Aksi</Th>
-                <Th>Entity</Th>
+                <Th>Entitas</Th>
                 <Th>Deskripsi</Th>
-                <Th>Actor</Th>
+                <Th>Pelaku</Th>
               </tr>
             </thead>
             <tbody>

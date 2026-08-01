@@ -1,11 +1,14 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth/profile";
 import { listPortalInvoices } from "@/server/services/invoices";
 import { listMyNotifications } from "@/server/services/notifications";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationList } from "@/components/dashboard/notification-list";
 import { formatIdr } from "@/lib/money/invoice-math";
+import { cn } from "@/lib/utils";
 import type { Profile } from "@/types/database";
 
 function PortalStatsFallback() {
@@ -16,8 +19,8 @@ function PortalStatsFallback() {
           key={i}
           className="rounded-[24px] border border-hairline bg-paper p-5"
         >
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="mt-3 h-8 w-20" />
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="mt-3 h-9 w-28" />
         </div>
       ))}
     </div>
@@ -26,7 +29,10 @@ function PortalStatsFallback() {
 
 function NotesFallback() {
   return (
-    <div className="rounded-[24px] border border-hairline bg-paper p-5 space-y-3" aria-busy="true">
+    <div
+      className="rounded-[24px] border border-hairline bg-paper p-5 space-y-3"
+      aria-busy="true"
+    >
       <Skeleton className="h-5 w-32" />
       <Skeleton className="h-4 w-full" />
     </div>
@@ -40,19 +46,35 @@ async function PortalStats({ profile }: { profile: Profile }) {
   );
   const outstanding = open.reduce((s, i) => s + Number(i.balance_due), 0);
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <Card>
-        <p className="text-sm text-mid-gray">Invoice open</p>
-        <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+    <div className="grid gap-4 sm:grid-cols-2" aria-label="Ringkasan tagihan">
+      <Link
+        href="/portal/invoices"
+        className={cn(
+          "block rounded-[24px] border border-hairline bg-paper p-5 shadow-subtle",
+          "hover:border-ink/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+        )}
+      >
+        <p className="text-xs font-medium uppercase tracking-wide text-mid-gray">
+          Invoice terbuka
+        </p>
+        <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-ink">
           {open.length}
         </p>
-      </Card>
-      <Card>
-        <p className="text-sm text-mid-gray">Sisa tagihan</p>
-        <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+      </Link>
+      <Link
+        href="/portal/invoices"
+        className={cn(
+          "block rounded-[24px] border border-hairline bg-paper p-5 shadow-subtle",
+          "hover:border-ink/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+        )}
+      >
+        <p className="text-xs font-medium uppercase tracking-wide text-mid-gray">
+          Sisa tagihan
+        </p>
+        <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-ink">
           {formatIdr(outstanding)}
         </p>
-      </Card>
+      </Link>
     </div>
   );
 }
@@ -61,25 +83,7 @@ async function PortalNotes({ profile }: { profile: Profile }) {
   const notes = await listMyNotifications(profile, 5);
   return (
     <Card>
-      <CardTitle className="mb-2">Notifikasi</CardTitle>
-      {notes.length ? (
-        <ul className="divide-y divide-hairline text-sm">
-          {notes.map((n) => (
-            <li
-              key={n.id}
-              className={`py-2 first:pt-0 last:pb-0 ${n.is_read ? "text-mid-gray" : "text-ink"}`}
-            >
-              <span className="font-medium">{n.title}</span>
-              <span className="text-mid-gray"> — {n.message}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm text-mid-gray">
-          Belum ada notifikasi. Status invoice dan konfirmasi bayar muncul di
-          sini.
-        </p>
-      )}
+      <NotificationList notes={notes} portal />
     </Card>
   );
 }
@@ -91,10 +95,10 @@ export default async function PortalHome() {
   return (
     <div className="mx-auto max-w-[960px] space-y-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">
-          Portal · {session.profile.full_name}
-        </h1>
-        <p className="text-sm text-mid-gray">Ringkasan tagihan dan notifikasi</p>
+        <h1 className="text-xl font-semibold tracking-tight">Portal</h1>
+        <p className="text-sm text-mid-gray">
+          Tagihan dan status bayar Anda
+        </p>
       </div>
       <Suspense fallback={<PortalStatsFallback />}>
         <PortalStats profile={session.profile} />

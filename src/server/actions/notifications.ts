@@ -23,6 +23,8 @@ export async function markAllNotificationsReadAction(): Promise<ActionResult> {
     const s = await requireVerifiedProfile();
     if (!s) return fail("UNAUTHORIZED", "Login dulu.");
     await n.markAllNotificationsRead(s.profile);
+    revalidatePath("/dashboard");
+    revalidatePath("/portal");
     return ok(undefined);
   } catch (e) {
     return toActionError(e);

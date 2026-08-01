@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-01T01:50:00.000Z",
+  "title": "Design System: F-INVOICE",
+  "extensions": {
+    "colorMeta": {
+      "canvas": { "role": "neutral", "displayName": "Canvas", "canonical": "#f5f5f5", "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#a3a3a3", "#e5e5e5", "#f5f5f5", "#fafafa"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#ffffff", "tonalRamp": ["#0a0a0a", "#171717", "#404040", "#737373", "#d4d4d4", "#f5f5f5", "#fafafa", "#ffffff"] },
+      "surface-alt": { "role": "neutral", "displayName": "Surface Alt", "canonical": "#fafafa", "tonalRamp": ["#0a0a0a", "#111111", "#262626", "#525252", "#a3a3a3", "#e5e5e5", "#f5f5f5", "#fafafa"] },
+      "ink": { "role": "primary", "displayName": "Ink", "canonical": "#0a0a0a", "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#404040", "#525252", "#737373", "#a3a3a3", "#e5e5e5"] },
+      "ink-soft": { "role": "primary", "displayName": "Ink Soft", "canonical": "#171717", "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#404040", "#525252", "#737373", "#a3a3a3", "#e5e5e5"] },
+      "mid-gray": { "role": "neutral", "displayName": "Mid Gray AA", "canonical": "#525252", "tonalRamp": ["#171717", "#262626", "#404040", "#525252", "#737373", "#a3a3a3", "#d4d4d4", "#e5e5e5"] },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "#e5e5e5", "tonalRamp": ["#262626", "#404040", "#737373", "#a3a3a3", "#d4d4d4", "#e5e5e5", "#f5f5f5", "#fafafa"] },
+      "ember": { "role": "destructive", "displayName": "Ember", "canonical": "#e7000b", "tonalRamp": ["#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#e7000b", "#f87171", "#fca5a5", "#fee2e2"] }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "Default 14px UI copy and list rows." },
+      "title": { "displayName": "Title", "purpose": "Card titles and section heads." },
+      "headline": { "displayName": "Headline", "purpose": "Page emphasis when needed." },
+      "display": { "displayName": "Display", "purpose": "Hero money figures only." },
+      "label": { "displayName": "Label", "purpose": "Stat captions and role chips." },
+      "mono": { "displayName": "Mono", "purpose": "Code-adjacent IDs when needed." }
+    },
+    "shadows": [
+      { "name": "subtle", "value": "0 0 0 1px rgba(23,23,23,0.05), 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)", "purpose": "Card and active nav elevation." }
+    ],
+    "motion": [
+      { "name": "state", "value": "150-250ms color/opacity", "purpose": "State feedback only; honor prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "High-emphasis staff action (Simpan, Buat, Verifikasi).",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">+ Invoice</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:none;border-radius:18px;background:#0a0a0a;color:#fafafa;font:500 14px Geist,ui-sans-serif,system-ui,sans-serif;cursor:pointer;transition:background .15s}.ds-btn-primary:hover{background:#171717}.ds-btn-primary:focus-visible{outline:none;box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(10,10,10,.25)}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Low-emphasis (Keluar, Cancel).",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Keluar</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:none;border-radius:18px;background:#f5f5f5;color:#0a0a0a;font:500 12px Geist,ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-secondary:hover{background:rgba(229,229,229,.6)}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Paper content container for panels and stats.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card-label\">PIUTANG</p><p class=\"ds-card-value\">Rp 1.250.000</p></div>",
+      "css": ".ds-card{background:#fff;border:1px solid #e5e5e5;border-radius:24px;padding:20px;box-shadow:0 0 0 1px rgba(23,23,23,.05),0 1px 3px rgba(0,0,0,.1),0 1px 2px -1px rgba(0,0,0,.1)}.ds-card-label{margin:0;font:500 12px Geist,ui-sans-serif,system-ui,sans-serif;color:#525252;letter-spacing:.04em}.ds-card-value{margin:8px 0 0;font:600 30px/1.15 Geist,ui-sans-serif,system-ui,sans-serif;color:#0a0a0a;font-variant-numeric:tabular-nums;letter-spacing:-.02em}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text entry and search resting field.",
+      "html": "<input class=\"ds-input\" type=\"search\" placeholder=\"Cari pelanggan…\" />",
+      "css": ".ds-input{box-sizing:border-box;width:100%;height:40px;padding:8px 12px;border:1px solid #e5e5e5;border-radius:18px;background:#f5f5f5;color:#0a0a0a;font:400 14px Geist,ui-sans-serif,system-ui,sans-serif}.ds-input::placeholder{color:#525252}.ds-input:focus-visible{outline:none;border-color:rgba(10,10,10,.3);box-shadow:0 0 0 2px rgba(10,10,10,.15)}"
+    },
+    {
+      "name": "Badge Danger",
+      "kind": "chip",
+      "refersTo": "badge-danger",
+      "description": "Status pill for OVERDUE / REJECTED.",
+      "html": "<span class=\"ds-badge-danger\">OVERDUE</span>",
+      "css": ".ds-badge-danger{display:inline-flex;align-items:center;border-radius:18px;padding:2px 10px;background:rgba(231,0,11,.1);color:#e7000b;font:500 12px Geist,ui-sans-serif,system-ui,sans-serif}"
+    },
+    {
+      "name": "Nav Item Active",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Sidebar active route pill.",
+      "html": "<a class=\"ds-nav-active\" href=\"#\">Dashboard</a>",
+      "css": ".ds-nav-active{display:block;border-radius:18px;padding:10px 12px;background:#fff;color:#0a0a0a;font:500 14px Geist,ui-sans-serif,system-ui,sans-serif;text-decoration:none;box-shadow:0 0 0 1px rgba(23,23,23,.05),0 1px 3px rgba(0,0,0,.1)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Clinical Blueprint on Frosted Paper",
+    "overview": "F-INVOICE is an invite-only operator ledger, not a SaaS marketing shell. The visual system is almost entirely achromatic: warm-gray canvas, white paper cards, black ink, and one ember reserved for destructive action and error. Geist carries every label, heading, and tabular IDR amount. Density is compact; chrome is quiet; every surface exists to finish a job (list, create, verify, share).\n\nThe system rejects theatre. No gradient heroes, no emerald growth dashboards, no glassmorphic shells, no navy-and-gold fintech chrome. Dark mode is optional system preference only — light mono is the default identity. Indonesian product voice: short labels, clear status words, no marketing fluff.",
+    "keyCharacteristics": [
+      "Achromatic by default; ember only for destroy/error (not status paint on metrics)",
+      "Radius hierarchy: 18px interactive, 24px containers",
+      "Whisper elevation: hairline border + barely-there card shadow",
+      "Money is sacred: tabular-nums, integer IDR, honest status machine",
+      "Task over theatre: CTAs and deep links beat vanity KPI wallpaper"
+    ],
+    "rules": [
+      { "name": "The One Ember Rule", "body": "Ember appears only for destructive/error. Status uses Badge tones or type weight, not ember paint on vanity numbers.", "section": "colors" },
+      { "name": "The Three-Tone Stack Rule", "body": "Canvas → surface-alt → paper layers depth without chromatic chrome.", "section": "colors" },
+      { "name": "The Product Type Rule", "body": "Fixed rem scale, not fluid clamp. One sans. Tabular-nums on every IDR amount and count.", "section": "typography" },
+      { "name": "The Money Scale Rule", "body": "Outstanding / primary money on home uses larger weight than vanity counts. Equal text-2xl on every KPI is forbidden.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces rest flat. Shadow only marks card or sticky chrome.", "section": "elevation" },
+      { "name": "The Hairline Edge Rule", "body": "Cards always carry 1px solid hairline plus subtle shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use mid-gray #525252 (light) so muted text stays AA on paper/canvas.",
+      "Do put primary job CTAs on list and home surfaces (+ Invoice, verify queue).",
+      "Do keep ember for destructive/error only.",
+      "Do use integer IDR + tabular-nums for every money figure.",
+      "Do match EmptyState + ListSearch patterns across staff lists.",
+      "Do honor prefers-reduced-motion (state feedback only, 150–250ms).",
+      "Do write Indonesian ops labels for staff UI (Jatuh tempo, Piutang, Invoice terbuka)."
+    ],
+    "donts": [
+      "Don't ship public SaaS onboarding, pricing pages, or multi-tenant workspace chrome.",
+      "Don't use navy-and-gold fintech, emerald growth dashboards, or gradient hero metrics.",
+      "Don't apply glassmorphism, side-stripe cards, or AI-cream marketing landing as the app shell.",
+      "Don't make dark-first cool tools the default identity.",
+      "Don't invent chromatic brand colors beyond ember.",
+      "Don't paint overdue/open metrics with ember as decoration.",
+      "Don't use equal-weight vanity KPI cards with no deep link (scoreboard theatre).",
+      "Don't mix English money jargon with Indonesian chrome without reason.",
+      "Don't set body/muted text lighter than mid-gray on paper (fails AA).",
+      "Don't use border-radius outside the scale (6 / 10 / 18 / 24).",
+      "Don't add payment-gateway marketplace UX or WhatsApp-chat product surfaces in MVP."
+    ]
+  }
+}

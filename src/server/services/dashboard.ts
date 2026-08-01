@@ -14,7 +14,7 @@ export async function getDashboardStats(profile: Profile) {
   const open = [...OPEN];
 
   // Parallel head counts + narrow money cols only (no full invoice rows).
-  const [settings, customersRes, openCnt, overdueCnt, paidCnt, openMoney, paidMoney] =
+  const [settings, customersRes, openCnt, overdueCnt, openMoney, paidMoney, pendingPay] =
     await Promise.all([
       ensureBusinessSettings(ownerId),
       admin
@@ -36,23 +36,22 @@ export async function getDashboardStats(profile: Profile) {
         .eq("status", "OVERDUE"),
       admin
         .from("invoices")
-        .select("id", { count: "exact", head: true })
-        .eq("owner_id", ownerId)
-        .is("deleted_at", null)
-        .eq("status", "PAID"),
-      admin
-        .from("invoices")
         .select("balance_due")
         .eq("owner_id", ownerId)
         .is("deleted_at", null)
         .in("status", open),
-      // only when revenue visible — skip PAID sum for Admin without show flag later
       admin
         .from("invoices")
         .select("total_amount")
         .eq("owner_id", ownerId)
         .is("deleted_at", null)
         .eq("status", "PAID"),
+      admin
+        .from("payments")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", ownerId)
+        .eq("status", "PENDING")
+        .is("cancelled_at", null),
     ]);
 
   let outstanding = 0;
@@ -73,9 +72,9 @@ export async function getDashboardStats(profile: Profile) {
 
   return {
     customers: customersRes.count ?? 0,
-    invoices: (openCnt.count ?? 0) + (paidCnt.count ?? 0),
     openInvoices: openCnt.count ?? 0,
     overdueInvoices: overdueCnt.count ?? 0,
+    pendingPayments: pendingPay.count ?? 0,
     outstanding,
     revenue: paidSum,
     showRevenue,

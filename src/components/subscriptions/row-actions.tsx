@@ -25,16 +25,22 @@ export function SubscriptionRowActions({ id, status }: { id: string; status: str
   return (
     <div className="flex flex-wrap gap-1">
       <Button size="sm" variant="outline" disabled={pending} onClick={() => go(() => generateSubscriptionInvoiceAction(id))}>
-        Generate
+        Buat invoice
       </Button>
       {status === "ACTIVE" ? (
-        <Button size="sm" variant="ghost" disabled={pending} onClick={() => go(() => pauseSubscriptionAction(id))}>Pause</Button>
+        <Button size="sm" variant="ghost" disabled={pending} onClick={() => go(() => pauseSubscriptionAction(id))}>
+          Jeda
+        </Button>
       ) : null}
       {status === "PAUSED" ? (
-        <Button size="sm" variant="ghost" disabled={pending} onClick={() => go(() => resumeSubscriptionAction(id))}>Resume</Button>
+        <Button size="sm" variant="ghost" disabled={pending} onClick={() => go(() => resumeSubscriptionAction(id))}>
+          Lanjut
+        </Button>
       ) : null}
       {status !== "CANCELLED" ? (
-        <Button size="sm" variant="destructive" disabled={pending} onClick={() => go(() => cancelSubscriptionAction(id))}>Cancel</Button>
+        <Button size="sm" variant="destructive" disabled={pending} onClick={() => go(() => cancelSubscriptionAction(id))}>
+          Batalkan
+        </Button>
       ) : null}
     </div>
   );

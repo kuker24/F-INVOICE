@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Mode = "light" | "dark" | "system";
@@ -29,13 +29,20 @@ export function ThemeToggle() {
   }, []);
 
   function cycle() {
-    const next: Mode = mode === "light" ? "dark" : mode === "dark" ? "system" : "light";
+    const next: Mode =
+      mode === "light" ? "dark" : mode === "dark" ? "system" : "light";
     setMode(next);
     apply(next);
   }
 
   const label =
-    mode === "dark" ? "Tema gelap" : mode === "light" ? "Tema terang" : "Tema sistem";
+    mode === "dark"
+      ? "Tema gelap"
+      : mode === "light"
+        ? "Tema terang"
+        : "Tema sistem";
+
+  const Icon = mode === "dark" ? Moon : mode === "light" ? Sun : Monitor;
 
   return (
     <Button
@@ -46,7 +53,7 @@ export function ThemeToggle() {
       aria-label={label}
       title={label}
     >
-      {mode === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+      <Icon className="h-4 w-4" aria-hidden />
     </Button>
   );
 }

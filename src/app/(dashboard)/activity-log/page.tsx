@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth/profile";
 import { listActivityLogs } from "@/server/services/activity-query";
 import { Card } from "@/components/ui/card";
+import { DataTable, Td, Th, Tr } from "@/components/ui/data-table";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function ActivityLogPage() {
   const session = await getSessionProfile();
@@ -9,35 +11,46 @@ export default async function ActivityLogPage() {
   const rows = await listActivityLogs(session.profile, 150);
   return (
     <div className="mx-auto max-w-[1280px] space-y-4">
-      <h1 className="text-xl font-semibold">Activity log</h1>
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Activity log</h1>
+        <p className="text-sm text-mid-gray">
+          {rows.length} entri terbaru · audit aksi staff
+        </p>
+      </div>
       <Card className="overflow-x-auto p-0">
-        <table className="w-full text-sm">
-          <thead className="border-b border-hairline text-left text-mid-gray">
-            <tr>
-              <th className="p-3">Waktu</th>
-              <th className="p-3">Aksi</th>
-              <th className="p-3">Entity</th>
-              <th className="p-3">Deskripsi</th>
-              <th className="p-3">Actor</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="border-b border-hairline/60">
-                <td className="p-3 whitespace-nowrap text-mid-gray">
-                  {new Date(r.created_at).toLocaleString("id-ID")}
-                </td>
-                <td className="p-3 font-medium">{r.action}</td>
-                <td className="p-3">{r.entity_type}</td>
-                <td className="p-3">{r.description}</td>
-                <td className="p-3">{r.actor_role ?? "SYSTEM"}</td>
+        {!rows.length ? (
+          <EmptyState
+            title="Belum ada aktivitas"
+            description="Kirim invoice, catat bayar, atau ubah master data — log muncul di sini."
+          />
+        ) : (
+          <DataTable>
+            <thead>
+              <tr>
+                <Th>Waktu</Th>
+                <Th>Aksi</Th>
+                <Th>Entity</Th>
+                <Th>Deskripsi</Th>
+                <Th>Actor</Th>
               </tr>
-            ))}
-            {!rows.length ? (
-              <tr><td colSpan={5} className="p-6 text-center text-mid-gray">Kosong.</td></tr>
-            ) : null}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <Tr key={r.id}>
+                  <Td className="whitespace-nowrap text-mid-gray">
+                    {new Date(r.created_at).toLocaleString("id-ID")}
+                  </Td>
+                  <Td className="font-medium">{r.action}</Td>
+                  <Td>{r.entity_type}</Td>
+                  <Td className="max-w-xs truncate" title={r.description}>
+                    {r.description}
+                  </Td>
+                  <Td className="text-mid-gray">{r.actor_role ?? "SYSTEM"}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </DataTable>
+        )}
       </Card>
     </div>
   );

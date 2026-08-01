@@ -8,9 +8,13 @@ export default async function PortalProfilePage() {
   if (!session) redirect("/login");
   return (
     <div className="mx-auto max-w-[640px] space-y-4">
-      <h1 className="text-xl font-semibold">Profil</h1>
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Profil</h1>
+        <p className="text-sm text-mid-gray">Nama tampilan dan nomor telepon</p>
+      </div>
       <Card>
-        <CardTitle className="mb-4">{session.profile.email}</CardTitle>
+        <CardTitle className="mb-1">{session.profile.email}</CardTitle>
+        <p className="mb-4 text-xs text-mid-gray">Email tidak bisa diubah di sini</p>
         <ProfileForm
           initial={{
             full_name: session.profile.full_name,

@@ -5,7 +5,9 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas p-4">
-      <div className="w-full max-w-md">{children}</div>
+      <main id="main" className="w-full max-w-md" tabIndex={-1}>
+        {children}
+      </main>
     </div>
   );
 }

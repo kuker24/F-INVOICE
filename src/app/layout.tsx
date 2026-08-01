@@ -38,6 +38,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-canvas font-sans text-ink antialiased`}
       >
+        <a href="#main" className="skip-link">
+          Loncat ke konten
+        </a>
         {children}
         <Toaster position="top-right" richColors closeButton />
       </body>

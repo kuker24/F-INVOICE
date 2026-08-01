@@ -99,3 +99,30 @@ body {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* Skip link: visible only on keyboard focus */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  border-radius: 18px;
+  background: var(--dm-ink);
+  color: var(--dm-surface-alt);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  outline: none;
+  box-shadow: var(--dm-shadow-subtle);
+}
+
+/* Heading balance — product lists */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}

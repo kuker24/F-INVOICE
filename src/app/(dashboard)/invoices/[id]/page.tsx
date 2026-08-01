@@ -35,48 +35,74 @@ export default async function InvoiceDetailPage({
     <div className="mx-auto max-w-[1280px] space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold">{String(inv.invoice_number)}</h1>
+          <p className="text-xs text-mid-gray">
+            <Link
+              href="/invoices"
+              className="underline-offset-2 hover:underline"
+            >
+              Invoice
+            </Link>
+            <span className="mx-1.5" aria-hidden>
+              /
+            </span>
+            <span className="text-ink">{String(inv.invoice_number)}</span>
+          </p>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight">
+            {String(inv.invoice_number)}
+          </h1>
           <p className="text-sm text-mid-gray">{customer?.name}</p>
           <div className="mt-2">
-            <Badge tone={statusTone(String(inv.status))}>{String(inv.status)}</Badge>
+            <Badge tone={statusTone(String(inv.status))}>
+              {String(inv.status)}
+            </Badge>
           </div>
         </div>
         <InvoiceActions id={String(inv.id)} status={String(inv.status)} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card>
-          <CardTitle className="text-sm text-mid-gray">Total</CardTitle>
-          <p className="mt-1 text-lg font-semibold">{formatIdr(Number(inv.total_amount))}</p>
+          <p className="text-sm text-mid-gray">Total</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight">
+            {formatIdr(Number(inv.total_amount))}
+          </p>
         </Card>
         <Card>
-          <CardTitle className="text-sm text-mid-gray">Terbayar</CardTitle>
-          <p className="mt-1 text-lg font-semibold">{formatIdr(Number(inv.amount_paid))}</p>
+          <p className="text-sm text-mid-gray">Terbayar</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight">
+            {formatIdr(Number(inv.amount_paid))}
+          </p>
         </Card>
         <Card>
-          <CardTitle className="text-sm text-mid-gray">Sisa</CardTitle>
-          <p className="mt-1 text-lg font-semibold">{formatIdr(Number(inv.balance_due))}</p>
+          <p className="text-sm text-mid-gray">Sisa</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight">
+            {formatIdr(Number(inv.balance_due))}
+          </p>
         </Card>
       </div>
 
-      <Card>
+      <Card className="overflow-x-auto">
         <CardTitle className="mb-3">Item</CardTitle>
         <table className="w-full text-sm">
-          <thead className="text-left text-mid-gray">
+          <thead className="border-b border-hairline text-left text-mid-gray">
             <tr>
-              <th className="pb-2">Nama</th>
-              <th className="pb-2">Qty</th>
-              <th className="pb-2 text-right">Harga</th>
-              <th className="pb-2 text-right">Total</th>
+              <th className="pb-2 font-medium">Nama</th>
+              <th className="pb-2 font-medium">Qty</th>
+              <th className="pb-2 text-right font-medium">Harga</th>
+              <th className="pb-2 text-right font-medium">Total</th>
             </tr>
           </thead>
           <tbody>
             {items.map((it) => (
-              <tr key={it.id} className="border-t border-hairline">
-                <td className="py-2">{it.name}</td>
-                <td className="py-2">{it.quantity}</td>
-                <td className="py-2 text-right">{formatIdr(it.unit_price)}</td>
-                <td className="py-2 text-right">{formatIdr(it.line_total)}</td>
+              <tr key={it.id} className="border-t border-hairline/60">
+                <td className="py-2.5">{it.name}</td>
+                <td className="py-2.5 tabular-nums">{it.quantity}</td>
+                <td className="py-2.5 text-right tabular-nums">
+                  {formatIdr(it.unit_price)}
+                </td>
+                <td className="py-2.5 text-right tabular-nums">
+                  {formatIdr(it.line_total)}
+                </td>
               </tr>
             ))}
           </tbody>

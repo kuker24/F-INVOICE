@@ -7,11 +7,17 @@ export async function listMyNotifications(profile: Profile, limit = 30) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("notifications")
-    .select("id,title,message,is_read,created_at,target_type,target_id,type,read_at,user_id")
+    .select(
+      "id,title,message,is_read,created_at,target_type,target_id,type,read_at,user_id",
+    )
     .eq("user_id", profile.id)
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error) throw new AppError("LIST_FAILED", error.message);
+  // Soft-fail: never crash dashboard/portal shell on list glitch.
+  if (error) {
+    console.error("[notifications]", error.message);
+    return [];
+  }
   return (data ?? []) as Notification[];
 }
 

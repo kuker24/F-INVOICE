@@ -3,12 +3,14 @@ import { getPublicInvoiceByToken } from "@/server/services/invoices";
 import { AppError } from "@/server/errors";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge, statusTone } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { formatIdr } from "@/lib/money/invoice-math";
 import { PublicPaymentForm } from "@/components/forms/public-payment-form";
 import { PublicViewBeacon } from "@/components/invoice/public-view-beacon";
 import { OPEN_FOR_PAYMENT } from "@/lib/invoice/status";
 import { getPublicEnv } from "@/config/public-env";
 import { invoiceShareText, whatsappShareUrl } from "@/lib/share/whatsapp";
+import { cn } from "@/lib/utils";
 
 /** ISR/CDN — no cookies/headers/after in render; VIEWED via client beacon. */
 export const revalidate = 60;
@@ -38,16 +40,17 @@ export default async function PublicInvoicePage({
   return (
     <div className="min-h-screen bg-canvas px-4 py-10">
       <PublicViewBeacon token={publicToken} />
-      <div className="mx-auto max-w-3xl space-y-4">
+      <main id="main" className="mx-auto max-w-3xl space-y-4" tabIndex={-1}>
         <Card>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm text-mid-gray">{dto.business_name}</p>
-              <h1 className="text-balance text-2xl font-semibold tracking-tight">
+              <h1 className="text-2xl font-semibold tracking-tight">
                 {dto.invoice_number}
               </h1>
               <p className="mt-1 text-sm">
-                Kepada: <span className="font-medium text-ink">{dto.customer_name}</span>
+                Kepada:{" "}
+                <span className="font-medium text-ink">{dto.customer_name}</span>
               </p>
             </div>
             <Badge tone={statusTone(dto.status)}>{dto.status}</Badge>
@@ -127,7 +130,7 @@ export default async function PublicInvoicePage({
           <p className="text-sm text-mid-gray">Bagikan atau unduh invoice.</p>
           <div className="flex flex-wrap gap-2">
             <a
-              className="inline-flex h-10 items-center rounded-[18px] border border-hairline bg-paper px-4 text-sm font-medium text-ink hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
               href={whatsappShareUrl(
                 null,
                 invoiceShareText({
@@ -146,7 +149,7 @@ export default async function PublicInvoicePage({
             </a>
             {pdfHref ? (
               <a
-                className="inline-flex h-10 items-center rounded-[18px] border border-hairline bg-paper px-4 text-sm font-medium text-ink hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+                className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
                 href={pdfHref}
               >
                 Download PDF
@@ -165,10 +168,12 @@ export default async function PublicInvoicePage({
         {dto.terms ? (
           <Card>
             <CardTitle className="mb-2">Syarat</CardTitle>
-            <p className="whitespace-pre-wrap text-sm text-mid-gray">{dto.terms}</p>
+            <p className="whitespace-pre-wrap text-pretty text-sm text-mid-gray">
+              {dto.terms}
+            </p>
           </Card>
         ) : null}
-      </div>
+      </main>
     </div>
   );
 }

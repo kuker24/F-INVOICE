@@ -93,9 +93,12 @@ export function AppSidebar({
         </div>
       ) : null}
 
-      <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-hairline bg-surface-alt md:flex">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-hairline bg-surface-alt md:flex">
         <div className="px-5 py-5">
-          <Link href={items[0]?.href ?? "/"} className="text-base font-semibold tracking-tight text-ink">
+          <Link
+            href={items[0]?.href ?? "/"}
+            className="text-base font-semibold tracking-tight text-ink"
+          >
             {brand}
           </Link>
         </div>

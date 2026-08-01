@@ -89,17 +89,21 @@ async function DashboardNotes({ profile }: { profile: Profile }) {
     <Card>
       <CardTitle className="mb-3">Notifikasi</CardTitle>
       {notes.length ? (
-        <ul className="space-y-2 text-sm">
+        <ul className="divide-y divide-hairline text-sm">
           {notes.map((n) => (
-            <li key={n.id} className={n.is_read ? "text-mid-gray" : "text-ink"}>
-              <span className="font-medium">{n.title}</span> — {n.message}
+            <li
+              key={n.id}
+              className={`py-2.5 first:pt-0 last:pb-0 ${n.is_read ? "text-mid-gray" : "text-ink"}`}
+            >
+              <span className="font-medium">{n.title}</span>
+              <span className="text-mid-gray"> — {n.message}</span>
             </li>
           ))}
         </ul>
       ) : (
         <p className="text-sm text-mid-gray">
-          Tidak ada notifikasi. Aktivitas invoice dan pembayaran akan muncul di
-          sini.
+          Belum ada notifikasi. Kirim invoice atau verifikasi bayar — ringkasan
+          muncul di sini.
         </p>
       )}
     </Card>

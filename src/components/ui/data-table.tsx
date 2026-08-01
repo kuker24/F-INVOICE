@@ -9,7 +9,9 @@ export function DataTable({
   className?: string;
 }) {
   return (
-    <table className={cn("w-full text-sm", className)}>
+    <table
+      className={cn("w-full min-w-[32rem] text-left text-sm", className)}
+    >
       {children}
     </table>
   );
@@ -41,13 +43,16 @@ export function Td({
   children,
   className,
   align = "left",
+  title,
 }: {
   children: React.ReactNode;
   className?: string;
   align?: "left" | "right";
+  title?: string;
 }) {
   return (
     <td
+      title={title}
       className={cn(
         "border-b border-hairline/60 px-3 py-2.5 align-middle",
         align === "right" ? "text-right tabular-nums" : "text-left",

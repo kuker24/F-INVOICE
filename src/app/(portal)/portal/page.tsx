@@ -63,16 +63,21 @@ async function PortalNotes({ profile }: { profile: Profile }) {
     <Card>
       <CardTitle className="mb-2">Notifikasi</CardTitle>
       {notes.length ? (
-        <ul className="space-y-1.5 text-sm">
+        <ul className="divide-y divide-hairline text-sm">
           {notes.map((n) => (
-            <li key={n.id}>
-              <span className="font-medium">{n.title}</span> — {n.message}
+            <li
+              key={n.id}
+              className={`py-2 first:pt-0 last:pb-0 ${n.is_read ? "text-mid-gray" : "text-ink"}`}
+            >
+              <span className="font-medium">{n.title}</span>
+              <span className="text-mid-gray"> — {n.message}</span>
             </li>
           ))}
         </ul>
       ) : (
         <p className="text-sm text-mid-gray">
-          Belum ada notifikasi. Status invoice baru akan tampil di sini.
+          Belum ada notifikasi. Status invoice dan konfirmasi bayar muncul di
+          sini.
         </p>
       )}
     </Card>

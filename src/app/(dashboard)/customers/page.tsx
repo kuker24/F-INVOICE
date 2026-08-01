@@ -7,6 +7,7 @@ import { Badge, statusTone } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { DataTable, Td, Th, Tr } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSearch } from "@/components/ui/list-search";
 
 export default async function CustomersPage({
   searchParams,
@@ -16,26 +17,39 @@ export default async function CustomersPage({
   const session = await getSessionProfile();
   if (!session) redirect("/login");
   const sp = await searchParams;
-  const rows = await listCustomers(session.profile, sp.q);
+  const q = sp.q?.trim() ?? "";
+  const rows = await listCustomers(session.profile, q || undefined);
 
   return (
     <div className="mx-auto max-w-[1280px] space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Pelanggan</h1>
-          <p className="text-sm text-mid-gray">{rows.length} data</p>
+          <p className="text-sm text-mid-gray">
+            {rows.length} data
+            {q ? ` · filter “${q}”` : ""}
+          </p>
         </div>
         <Link href="/customers/new" className={buttonVariants()}>
           + Pelanggan
         </Link>
       </div>
+      <ListSearch
+        action="/customers"
+        q={q}
+        placeholder="Cari nama, kode, atau email…"
+      />
       <Card className="overflow-x-auto p-0">
         {!rows.length ? (
           <EmptyState
-            title="Belum ada pelanggan"
-            description="Tambah master pelanggan sebelum membuat invoice."
-            actionHref="/customers/new"
-            actionLabel="+ Pelanggan"
+            title={q ? "Tidak ada hasil" : "Belum ada pelanggan"}
+            description={
+              q
+                ? `Tidak ada pelanggan yang cocok dengan “${q}”. Coba kata lain atau reset filter.`
+                : "Tambah master pelanggan sebelum membuat invoice."
+            }
+            actionHref={q ? undefined : "/customers/new"}
+            actionLabel={q ? undefined : "+ Pelanggan"}
           />
         ) : (
           <DataTable>

@@ -67,7 +67,7 @@ export function PortalPaymentForm({
       </div>
       {error ? <p className="sm:col-span-2 text-sm text-ember">{error}</p> : null}
       <div className="sm:col-span-2">
-        <Button type="submit" disabled={pending}>{pending ? "…" : "Kirim konfirmasi"}</Button>
+        <Button type="submit" disabled={pending}>{pending ? "Mengirim…" : "Kirim konfirmasi"}</Button>
       </div>
     </form>
   );

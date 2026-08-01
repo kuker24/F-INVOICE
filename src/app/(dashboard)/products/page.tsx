@@ -8,29 +8,50 @@ import { Badge, statusTone } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { DataTable, Td, Th, Tr } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSearch } from "@/components/ui/list-search";
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const session = await getSessionProfile();
   if (!session) redirect("/login");
-  const rows = await listProducts(session.profile);
+  const sp = await searchParams;
+  const q = sp.q?.trim() ?? "";
+  const rows = await listProducts(session.profile, q || undefined);
   return (
     <div className="mx-auto max-w-[1280px] space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Produk & Layanan</h1>
-          <p className="text-sm text-mid-gray">{rows.length} data</p>
+          <h1 className="text-xl font-semibold tracking-tight">
+            Produk & Layanan
+          </h1>
+          <p className="text-sm text-mid-gray">
+            {rows.length} data
+            {q ? ` · filter “${q}”` : ""}
+          </p>
         </div>
         <Link href="/products/new" className={buttonVariants()}>
           + Produk
         </Link>
       </div>
+      <ListSearch
+        action="/products"
+        q={q}
+        placeholder="Cari nama atau kode produk…"
+      />
       <Card className="overflow-x-auto p-0">
         {!rows.length ? (
           <EmptyState
-            title="Belum ada produk"
-            description="Definisikan item atau layanan untuk dipakai di invoice."
-            actionHref="/products/new"
-            actionLabel="+ Produk"
+            title={q ? "Tidak ada hasil" : "Belum ada produk"}
+            description={
+              q
+                ? `Tidak ada produk yang cocok dengan “${q}”.`
+                : "Definisikan item atau layanan untuk dipakai di invoice."
+            }
+            actionHref={q ? undefined : "/products/new"}
+            actionLabel={q ? undefined : "+ Produk"}
           />
         ) : (
           <DataTable>

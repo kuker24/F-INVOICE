@@ -84,7 +84,7 @@ export function SubscriptionForm({ customers }: { customers: { id: string; name:
         Auto generate invoice
       </label>
       {error ? <p className="text-sm text-ember">{error}</p> : null}
-      <Button type="submit" disabled={pending}>{pending ? "…" : "Simpan"}</Button>
+      <Button type="submit" disabled={pending}>{pending ? "Menyimpan…" : "Simpan"}</Button>
     </form>
   );
 }

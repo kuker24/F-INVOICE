@@ -83,7 +83,7 @@ export function BusinessSettingsForm({ initial }: { initial: BusinessSettings })
       {error ? <p className="sm:col-span-2 text-sm text-ember">{error}</p> : null}
       {ok ? <p className="sm:col-span-2 text-sm">Tersimpan.</p> : null}
       <div className="sm:col-span-2">
-        <Button type="submit" disabled={pending}>{pending ? "…" : "Simpan"}</Button>
+        <Button type="submit" disabled={pending}>{pending ? "Menyimpan…" : "Simpan"}</Button>
       </div>
     </form>
   );

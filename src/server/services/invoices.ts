@@ -14,6 +14,7 @@ import type {
 import { ownerIdOf } from "@/lib/auth/owner";
 import { assertStaff } from "@/lib/permissions/assert";
 import { AppError } from "@/server/errors";
+import { sanitizeSearch } from "@/lib/search";
 import {
   computeInvoiceTotals,
   computeLine,
@@ -118,8 +119,9 @@ export async function listInvoices(
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (opts?.status) query = query.eq("status", opts.status);
-  if (opts?.q?.trim()) {
-    query = query.ilike("invoice_number", `%${opts.q.trim()}%`);
+  const term = sanitizeSearch(opts?.q);
+  if (term) {
+    query = query.ilike("invoice_number", `%${term}%`);
   }
   const { data, error } = await query;
   if (error) throw new AppError("LIST_FAILED", error.message);

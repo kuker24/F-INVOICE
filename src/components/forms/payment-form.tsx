@@ -69,7 +69,7 @@ export function PaymentForm({ invoices }: { invoices: { id: string; invoice_numb
         Verifikasi langsung
       </label>
       {error ? <p className="text-sm text-ember">{error}</p> : null}
-      <Button type="submit" disabled={pending}>{pending ? "…" : "Catat"}</Button>
+      <Button type="submit" disabled={pending}>{pending ? "Mencatat…" : "Catat"}</Button>
     </form>
   );
 }

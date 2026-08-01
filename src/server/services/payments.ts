@@ -14,6 +14,7 @@ import {
   staffUserIds,
   userIdsForCustomer,
 } from "@/server/services/activity";
+import { sanitizeSearch } from "@/lib/search";
 
 async function nextPayNumber(ownerId: string, prefix: string, year: number) {
   const admin = createAdminClient();
@@ -79,15 +80,28 @@ async function recomputeInvoice(admin: ReturnType<typeof createAdminClient>, inv
   return data as Invoice;
 }
 
-export async function listPayments(profile: Profile) {
+export async function listPayments(
+  profile: Profile,
+  opts?: { q?: string; status?: string },
+) {
   assertStaff(profile);
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("payments")
     .select(
-      "id,invoice_id,customer_id,amount,payment_date,status,method,source,created_at,invoices(invoice_number),customers(name)",
+      "id,invoice_id,customer_id,amount,payment_date,status,method,source,payment_number,created_at,invoices(invoice_number),customers(name)",
     )
     .order("created_at", { ascending: false });
+  if (opts?.status?.trim()) {
+    query = query.eq("status", opts.status.trim());
+  }
+  const t = sanitizeSearch(opts?.q);
+  if (t) {
+    query = query.or(
+      `payment_number.ilike.%${t}%,reference_number.ilike.%${t}%`,
+    );
+  }
+  const { data, error } = await query;
   if (error) throw new AppError("LIST_FAILED", error.message);
   return data ?? [];
 }

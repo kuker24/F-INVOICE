@@ -6,6 +6,7 @@ import { ownerIdOf } from "@/lib/auth/owner";
 import { assertStaff } from "@/lib/permissions/assert";
 import { AppError } from "@/server/errors";
 import { logActivity } from "@/server/services/activity";
+import { sanitizeSearch } from "@/lib/search";
 
 export type CustomerInput = {
   code: string;
@@ -33,9 +34,10 @@ export async function listCustomers(profile: Profile, q?: string) {
     )
     .is("deleted_at", null)
     .order("name");
-  if (q?.trim()) {
+  const term = sanitizeSearch(q);
+  if (term) {
     query = query.or(
-      `name.ilike.%${q.trim()}%,code.ilike.%${q.trim()}%,email.ilike.%${q.trim()}%`,
+      `name.ilike.%${term}%,code.ilike.%${term}%,email.ilike.%${term}%`,
     );
   }
   const { data, error } = await query;

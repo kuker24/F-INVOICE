@@ -7,19 +7,46 @@ import { Badge, statusTone } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { DataTable, Td, Th, Tr } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSearch } from "@/components/ui/list-search";
 import { formatIdr } from "@/lib/money/invoice-math";
 import { ExportCsvButton } from "@/components/invoice/export-csv-button";
+import type { InvoiceStatus } from "@/types/database";
 
-export default async function InvoicesPage() {
+const STATUS_OPTS = [
+  { value: "DRAFT", label: "DRAFT" },
+  { value: "SENT", label: "SENT" },
+  { value: "VIEWED", label: "VIEWED" },
+  { value: "PARTIALLY_PAID", label: "PARTIALLY_PAID" },
+  { value: "PAID", label: "PAID" },
+  { value: "OVERDUE", label: "OVERDUE" },
+  { value: "CANCELLED", label: "CANCELLED" },
+];
+
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
   const session = await getSessionProfile();
   if (!session) redirect("/login");
-  const rows = await listInvoices(session.profile);
+  const sp = await searchParams;
+  const q = sp.q?.trim() ?? "";
+  const status = sp.status?.trim() ?? "";
+  const rows = await listInvoices(session.profile, {
+    q: q || undefined,
+    status: (status as InvoiceStatus) || undefined,
+  });
   return (
     <div className="mx-auto max-w-[1280px] space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Invoice</h1>
-          <p className="text-sm text-mid-gray">{rows.length} data</p>
+          <p className="text-sm text-mid-gray">
+            {rows.length} data
+            {q || status
+              ? ` · filter${q ? ` “${q}”` : ""}${status ? ` ${status}` : ""}`
+              : ""}
+          </p>
         </div>
         <div className="flex gap-2">
           <ExportCsvButton />
@@ -28,13 +55,24 @@ export default async function InvoicesPage() {
           </Link>
         </div>
       </div>
+      <ListSearch
+        action="/invoices"
+        q={q}
+        status={status}
+        placeholder="Cari nomor invoice…"
+        statusOptions={STATUS_OPTS}
+      />
       <Card className="overflow-x-auto p-0">
         {!rows.length ? (
           <EmptyState
-            title="Belum ada invoice"
-            description="Buat draft invoice pertama untuk pelanggan."
-            actionHref="/invoices/new"
-            actionLabel="+ Invoice"
+            title={q || status ? "Tidak ada hasil" : "Belum ada invoice"}
+            description={
+              q || status
+                ? "Ubah kata kunci atau status, atau reset filter."
+                : "Buat draft invoice pertama untuk pelanggan."
+            }
+            actionHref={q || status ? undefined : "/invoices/new"}
+            actionLabel={q || status ? undefined : "+ Invoice"}
           />
         ) : (
           <DataTable>

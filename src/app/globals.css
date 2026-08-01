@@ -7,7 +7,8 @@
   --dm-surface-alt: #fafafa;
   --dm-ink: #0a0a0a;
   --dm-ink-soft: #171717;
-  --dm-mid-gray: #737373;
+  /* ~#525252 — AA on paper/canvas (placeholder + muted body) */
+  --dm-mid-gray: #525252;
   --dm-hairline: #e5e5e5;
   --dm-ember: #e7000b;
   --dm-shadow-subtle: 0 0 0 1px rgba(23, 23, 23, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1),
@@ -31,7 +32,7 @@
   --dm-surface-alt: #111111;
   --dm-ink: #f5f5f5;
   --dm-ink-soft: #e5e5e5;
-  --dm-mid-gray: #a3a3a3;
+  --dm-mid-gray: #a8a8a8;
   --dm-hairline: #262626;
   --dm-ember: #ff4d4f;
   --dm-shadow-subtle: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 1px 3px rgba(0, 0, 0, 0.4);
@@ -47,7 +48,7 @@
     --dm-surface-alt: #111111;
     --dm-ink: #f5f5f5;
     --dm-ink-soft: #e5e5e5;
-    --dm-mid-gray: #a3a3a3;
+    --dm-mid-gray: #a8a8a8;
     --dm-hairline: #262626;
     --dm-ember: #ff4d4f;
     --dm-shadow-subtle: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 1px 3px rgba(0, 0, 0, 0.4);

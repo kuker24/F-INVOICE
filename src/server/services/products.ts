@@ -6,6 +6,7 @@ import { ownerIdOf } from "@/lib/auth/owner";
 import { assertStaff } from "@/lib/permissions/assert";
 import { AppError } from "@/server/errors";
 import { logActivity } from "@/server/services/activity";
+import { sanitizeSearch } from "@/lib/search";
 
 export type ProductInput = {
   code: string;
@@ -29,8 +30,9 @@ export async function listProducts(profile: Profile, q?: string) {
     )
     .is("deleted_at", null)
     .order("name");
-  if (q?.trim()) {
-    query = query.or(`name.ilike.%${q.trim()}%,code.ilike.%${q.trim()}%`);
+  const term = sanitizeSearch(q);
+  if (term) {
+    query = query.or(`name.ilike.%${term}%,code.ilike.%${term}%`);
   }
   const { data, error } = await query;
   if (error) throw new AppError("LIST_FAILED", error.message);

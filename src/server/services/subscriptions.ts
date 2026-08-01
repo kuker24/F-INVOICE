@@ -9,6 +9,7 @@ import { advanceBillingDate, addDays, todayInTz } from "@/lib/date/business";
 import { createInvoice } from "@/server/services/invoices";
 import { ensureBusinessSettings } from "@/server/services/settings";
 import { logActivity, notifyUsers, staffUserIds } from "@/server/services/activity";
+import { sanitizeSearch } from "@/lib/search";
 
 export type SubscriptionInput = {
   customer_id: string;
@@ -28,15 +29,26 @@ export type SubscriptionInput = {
   internal_notes?: string | null;
 };
 
-export async function listSubscriptions(profile: Profile) {
+export async function listSubscriptions(
+  profile: Profile,
+  opts?: { q?: string; status?: string },
+) {
   assertStaff(profile);
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("subscriptions")
     .select(
       "id,name,billing_cycle,price,status,next_invoice_date,start_date,customer_id,created_at,customers(name)",
     )
     .order("created_at", { ascending: false });
+  if (opts?.status?.trim()) {
+    query = query.eq("status", opts.status.trim());
+  }
+  const term = sanitizeSearch(opts?.q);
+  if (term) {
+    query = query.ilike("name", `%${term}%`);
+  }
+  const { data, error } = await query;
   if (error) throw new AppError("LIST_FAILED", error.message);
   return data ?? [];
 }

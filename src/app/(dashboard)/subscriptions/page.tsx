@@ -7,31 +7,65 @@ import { Badge, statusTone } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { DataTable, Td, Th, Tr } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSearch } from "@/components/ui/list-search";
 import { formatIdr } from "@/lib/money/invoice-math";
 import { SubscriptionRowActions } from "@/components/subscriptions/row-actions";
 
-export default async function SubscriptionsPage() {
+const STATUS_OPTS = [
+  { value: "ACTIVE", label: "ACTIVE" },
+  { value: "PAUSED", label: "PAUSED" },
+  { value: "CANCELLED", label: "CANCELLED" },
+  { value: "EXPIRED", label: "EXPIRED" },
+];
+
+export default async function SubscriptionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
   const session = await getSessionProfile();
   if (!session) redirect("/login");
-  const rows = await listSubscriptions(session.profile);
+  const sp = await searchParams;
+  const q = sp.q?.trim() ?? "";
+  const status = sp.status?.trim() ?? "";
+  const rows = await listSubscriptions(session.profile, {
+    q: q || undefined,
+    status: status || undefined,
+  });
   return (
     <div className="mx-auto max-w-[1280px] space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Langganan</h1>
-          <p className="text-sm text-mid-gray">{rows.length} data</p>
+          <p className="text-sm text-mid-gray">
+            {rows.length} data
+            {q || status
+              ? ` · filter${q ? ` “${q}”` : ""}${status ? ` ${status}` : ""}`
+              : ""}
+          </p>
         </div>
         <Link href="/subscriptions/new" className={buttonVariants()}>
           + Langganan
         </Link>
       </div>
+      <ListSearch
+        action="/subscriptions"
+        q={q}
+        status={status}
+        placeholder="Cari nama langganan…"
+        statusOptions={STATUS_OPTS}
+      />
       <Card className="overflow-x-auto p-0">
         {!rows.length ? (
           <EmptyState
-            title="Belum ada langganan"
-            description="Buat langganan berulang; cron akan generate invoice draft."
-            actionHref="/subscriptions/new"
-            actionLabel="+ Langganan"
+            title={q || status ? "Tidak ada hasil" : "Belum ada langganan"}
+            description={
+              q || status
+                ? "Ubah filter atau reset."
+                : "Buat langganan berulang; cron akan generate invoice draft."
+            }
+            actionHref={q || status ? undefined : "/subscriptions/new"}
+            actionLabel={q || status ? undefined : "+ Langganan"}
           />
         ) : (
           <DataTable>
@@ -54,7 +88,9 @@ export default async function SubscriptionsPage() {
                     <Td className="font-medium">{String(r.name)}</Td>
                     <Td>{c?.name ?? "—"}</Td>
                     <Td>{String(r.billing_cycle)}</Td>
-                    <Td className="tabular-nums">{String(r.next_invoice_date)}</Td>
+                    <Td className="tabular-nums">
+                      {String(r.next_invoice_date)}
+                    </Td>
                     <Td align="right">{formatIdr(Number(r.price))}</Td>
                     <Td>
                       <Badge tone={statusTone(String(r.status))}>

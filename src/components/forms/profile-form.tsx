@@ -40,7 +40,7 @@ export function ProfileForm({
         <Input name="phone" defaultValue={initial.phone ?? ""} />
       </div>
       {error ? <p className="text-sm text-ember">{error}</p> : null}
-      <Button type="submit" disabled={pending}>{pending ? "…" : "Simpan"}</Button>
+      <Button type="submit" disabled={pending}>{pending ? "Menyimpan…" : "Simpan"}</Button>
     </form>
   );
 }

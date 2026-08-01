@@ -12,6 +12,7 @@
     "check:share": "node src/lib/share/selfcheck.mjs",
     "check:public-cache": "node scripts/check-public-cache.mjs",
     "check:identity-cookie": "node scripts/check-identity-cookie.mjs",
+    "perf:lab": "node scripts/perf-lab.mjs",
     "check": "pnpm check:money && pnpm check:rate-limit && pnpm check:share && pnpm check:public-cache && pnpm check:identity-cookie && pnpm lint && pnpm build",
     "seed": "node --env-file=.env.local scripts/seed-dev-users.mjs",
     "check:smoke": "node --env-file=.env.local scripts/smoke-api.mjs",

@@ -76,6 +76,9 @@ function NavLinks({
   );
 }
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function AppSidebar({
   items,
   brand = "F-INVOICE",
@@ -89,22 +92,53 @@ export function AppSidebar({
   const toggleRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
 
+  function closeDrawer() {
+    setOpen(false);
+    // Return focus after paint so toggle is focusable again.
+    queueMicrotask(() => toggleRef.current?.focus());
+  }
+
   useEffect(() => {
     if (!open) return;
+    const panel = panelRef.current;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const nodes = () =>
+      Array.from(
+        panel?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [],
+      ).filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+
+    nodes()[0]?.focus();
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        setOpen(false);
-        toggleRef.current?.focus();
+        closeDrawer();
+        return;
+      }
+      if (e.key !== "Tab" || !panel) return;
+      const list = nodes();
+      if (list.length === 0) return;
+      const first = list[0]!;
+      const last = list[list.length - 1]!;
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey) {
+        if (active === first || !panel.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !panel.contains(active)) {
+        e.preventDefault();
+        first.focus();
       }
     };
+
     document.addEventListener("keydown", onKey);
-    // First focusable in panel (brand link).
-    const focusable = panelRef.current?.querySelector<HTMLElement>(
-      "a, button",
-    );
-    focusable?.focus();
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open]);
 
   return (
@@ -131,10 +165,8 @@ export function AppSidebar({
             type="button"
             className="absolute inset-0 bg-ink/20"
             aria-label="Tutup overlay"
-            onClick={() => {
-              setOpen(false);
-              toggleRef.current?.focus();
-            }}
+            tabIndex={-1}
+            onClick={closeDrawer}
           />
           <aside
             id={menuId}
@@ -148,7 +180,7 @@ export function AppSidebar({
               <Link
                 href={items[0]?.href ?? "/"}
                 className="text-base font-semibold tracking-tight text-ink"
-                onClick={() => setOpen(false)}
+                onClick={closeDrawer}
               >
                 {brand}
               </Link>
@@ -156,7 +188,7 @@ export function AppSidebar({
             <NavLinks
               items={items}
               pathname={pathname}
-              onNavigate={() => setOpen(false)}
+              onNavigate={closeDrawer}
             />
           </aside>
         </div>

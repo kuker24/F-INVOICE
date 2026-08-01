@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
 import type { AccountStatus, UserRole } from "@/types/database";
 import {
   HDR_CUSTOMER,
@@ -38,6 +37,12 @@ function skipAuth(pathname: string) {
   return SKIP_AUTH_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
+function hasSupabaseSessionCookie(request: NextRequest) {
+  return request.cookies
+    .getAll()
+    .some((c) => c.name.includes("auth-token") || c.name.startsWith("sb-"));
+}
+
 type ProfileLite = {
   id: string;
   role: string;
@@ -49,11 +54,12 @@ type ProfileLite = {
   phone: string | null;
 };
 
-async function withIdentity(
+function withIdentity(
   request: NextRequest,
-  base: NextResponse,
+  base: NextResponse | null,
   profile: ProfileLite,
   setIdCookie: boolean,
+  idCookieValue?: string,
 ) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(HDR_UID, profile.id);
@@ -68,25 +74,12 @@ async function withIdentity(
   const res = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  base.cookies.getAll().forEach((c) => {
+  base?.cookies.getAll().forEach((c) => {
     res.cookies.set(c.name, c.value);
   });
 
-  if (setIdCookie) {
-    res.cookies.set(
-      IDENTITY_COOKIE,
-      await encodeIdentityCookie({
-        id: profile.id,
-        role: profile.role,
-        status: profile.status,
-        full_name: profile.full_name ?? "",
-        email: profile.email ?? "",
-        owner_id: profile.owner_id ?? "",
-        customer_id: profile.customer_id ?? "",
-        phone: profile.phone ?? "",
-      }),
-      identityCookieOptions(),
-    );
+  if (setIdCookie && idCookieValue) {
+    res.cookies.set(IDENTITY_COOKIE, idCookieValue, identityCookieOptions());
   }
   return res;
 }
@@ -118,6 +111,34 @@ function roleGate(
   return null;
 }
 
+function profileFromCached(cached: {
+  id: string;
+  role: string;
+  status: string;
+  full_name: string;
+  email: string;
+  owner_id: string;
+  customer_id: string;
+  phone: string;
+}): ProfileLite {
+  return {
+    id: cached.id,
+    role: cached.role,
+    status: cached.status,
+    full_name: cached.full_name,
+    email: cached.email,
+    owner_id: cached.owner_id || null,
+    customer_id: cached.customer_id || null,
+    phone: cached.phone || null,
+  };
+}
+
+/** Cold path only — keeps @supabase/ssr off the identity-cookie hot path. */
+async function loadSession(request: NextRequest) {
+  const { updateSession } = await import("@/lib/supabase/middleware");
+  return updateSession(request);
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -125,14 +146,33 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Hot path: signed identity + session cookie present → no Supabase RTT / client init.
+  // Tradeoff: revoked JWT still valid until identity TTL (~10m); same as prior getSession hobby path.
+  if (!isAuthPath(pathname)) {
+    const cached = await decodeIdentityCookie(
+      request.cookies.get(IDENTITY_COOKIE)?.value,
+    );
+    if (
+      cached &&
+      cached.status === "ACTIVE" &&
+      hasSupabaseSessionCookie(request)
+    ) {
+      const gate = roleGate(cached.role as UserRole, pathname, request);
+      if (gate) return gate;
+      return withIdentity(
+        request,
+        null,
+        profileFromCached(cached),
+        false,
+      );
+    }
+  }
+
   if (isAuthPath(pathname)) {
-    const hasSb = request.cookies
-      .getAll()
-      .some((c) => c.name.includes("auth-token") || c.name.startsWith("sb-"));
-    if (!hasSb) {
+    if (!hasSupabaseSessionCookie(request)) {
       return NextResponse.next();
     }
-    const { user, supabaseResponse, supabase } = await updateSession(request);
+    const { user, supabaseResponse, supabase } = await loadSession(request);
     if (!supabase) return supabaseResponse;
     if (user && (pathname === "/login" || pathname === "/forgot-password")) {
       const cached = await decodeIdentityCookie(
@@ -174,53 +214,20 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Protected: signed identity cookie first (no profiles DB).
-  const cached = await decodeIdentityCookie(
-    request.cookies.get(IDENTITY_COOKIE)?.value,
-  );
-  if (cached && cached.status === "ACTIVE") {
-    const { user, supabaseResponse, supabase } = await updateSession(request);
-    if (!supabase) return supabaseResponse;
-    if (!user) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      url.searchParams.set("next", pathname);
-      const redir = NextResponse.redirect(url);
-      redir.cookies.set(IDENTITY_COOKIE, "", {
-        ...identityCookieOptions(0),
-        maxAge: 0,
-      });
-      return redir;
-    }
-    if (user.id === cached.id) {
-      const gate = roleGate(cached.role as UserRole, pathname, request);
-      if (gate) return gate;
-      return withIdentity(
-        request,
-        supabaseResponse,
-        {
-          id: cached.id,
-          role: cached.role,
-          status: cached.status,
-          full_name: cached.full_name,
-          email: cached.email,
-          owner_id: cached.owner_id || null,
-          customer_id: cached.customer_id || null,
-          phone: cached.phone || null,
-        },
-        false,
-      );
-    }
-  }
-
-  const { supabase, user, supabaseResponse } = await updateSession(request);
+  // Protected cold path: no/expired identity cookie → full session + mint cookie.
+  const { supabase, user, supabaseResponse } = await loadSession(request);
   if (!supabase) return supabaseResponse;
 
   if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    const redir = NextResponse.redirect(url);
+    redir.cookies.set(IDENTITY_COOKIE, "", {
+      ...identityCookieOptions(0),
+      maxAge: 0,
+    });
+    return redir;
   }
 
   const { data: profile } = await supabase
@@ -246,7 +253,24 @@ export async function middleware(request: NextRequest) {
   const gate = roleGate(role, pathname, request);
   if (gate) return gate;
 
-  return withIdentity(request, supabaseResponse, profile as ProfileLite, true);
+  const idVal = await encodeIdentityCookie({
+    id: profile.id,
+    role: profile.role,
+    status: profile.status,
+    full_name: profile.full_name ?? "",
+    email: profile.email ?? "",
+    owner_id: profile.owner_id ?? "",
+    customer_id: profile.customer_id ?? "",
+    phone: profile.phone ?? "",
+  });
+
+  return withIdentity(
+    request,
+    supabaseResponse,
+    profile as ProfileLite,
+    true,
+    idVal,
+  );
 }
 
 export const config = {

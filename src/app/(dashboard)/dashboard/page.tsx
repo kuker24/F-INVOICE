@@ -78,6 +78,15 @@ async function DashboardStats({ profile }: { profile: Profile }) {
   const stats = await getDashboardStats(profile);
   const firstRun = stats.customers === 0 && stats.openInvoices === 0;
 
+  if (stats.error) {
+    return (
+      <Card className="p-5" role="alert">
+        <p className="text-sm font-medium text-ember">Gagal memuat statistik</p>
+        <p className="mt-1 text-sm text-mid-gray">{stats.error}</p>
+      </Card>
+    );
+  }
+
   if (firstRun) {
     return (
       <Card className="p-0">
@@ -109,6 +118,15 @@ async function DashboardStats({ profile }: { profile: Profile }) {
       className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
       aria-label="Ringkasan keuangan"
     >
+      {stats.partial ? (
+        <p
+          className="sm:col-span-2 lg:col-span-4 text-xs text-mid-gray"
+          role="status"
+        >
+          Total uang dipotong cap baris — terapkan migrasi dashboard_stats untuk
+          agregat penuh.
+        </p>
+      ) : null}
       <StatLink
         href="/invoices?status=OVERDUE"
         label="Jatuh tempo"

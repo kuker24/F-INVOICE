@@ -428,15 +428,9 @@ export function InvoicePdfDocument({ data }: { data: PdfInvoiceData }) {
 
         <View style={styles.totalsWrap}>
           <MoneyLine label="Subtotal" amount={data.subtotal} muted />
-          {data.discountAmount > 0 ? (
-            <MoneyLine label="Diskon" amount={data.discountAmount} muted />
-          ) : null}
-          {data.taxAmount > 0 ? (
-            <MoneyLine label="Pajak" amount={data.taxAmount} muted />
-          ) : null}
-          {data.additionalFee > 0 ? (
-            <MoneyLine label="Biaya lain" amount={data.additionalFee} muted />
-          ) : null}
+          <MoneyLine label="Diskon" amount={data.discountAmount} muted />
+          <MoneyLine label="Pajak" amount={data.taxAmount} muted />
+          <MoneyLine label="Biaya lain" amount={data.additionalFee} muted />
           <View style={styles.totalDivider} />
           <MoneyLine label="Total" amount={data.totalAmount} bold />
           <MoneyLine label="Terbayar" amount={data.amountPaid} muted />

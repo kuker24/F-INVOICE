@@ -12,12 +12,36 @@ async function staff() {
   return s.profile;
 }
 
+function emptyToNull(v: unknown) {
+  if (v === "" || v === undefined) return null;
+  return v;
+}
+
 export async function createSubscriptionAction(
   raw: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const profile = await staff();
-    const parsed = subscriptionSchema.safeParse(raw);
+    const body =
+      raw && typeof raw === "object"
+        ? {
+            ...(raw as Record<string, unknown>),
+            product_id: emptyToNull((raw as Record<string, unknown>).product_id),
+            description: emptyToNull((raw as Record<string, unknown>).description),
+            template_id: emptyToNull((raw as Record<string, unknown>).template_id),
+            payment_method_id: emptyToNull(
+              (raw as Record<string, unknown>).payment_method_id,
+            ),
+            end_date: emptyToNull((raw as Record<string, unknown>).end_date),
+            next_invoice_date: emptyToNull(
+              (raw as Record<string, unknown>).next_invoice_date,
+            ),
+            custom_interval_days: emptyToNull(
+              (raw as Record<string, unknown>).custom_interval_days,
+            ),
+          }
+        : raw;
+    const parsed = subscriptionSchema.safeParse(body);
     if (!parsed.success) {
       return fail("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid");
     }

@@ -95,7 +95,15 @@ export default async function InvoiceDetailPage({
           <tbody>
             {items.map((it) => (
               <tr key={it.id} className="border-t border-hairline/60">
-                <td className="py-2.5">{it.name}</td>
+                <td className="py-2.5">
+                  <span className="font-medium">{it.name}</span>
+                  {it.description ? (
+                    <p className="mt-0.5 text-xs text-mid-gray">{it.description}</p>
+                  ) : null}
+                  {it.unit ? (
+                    <p className="text-xs text-mid-gray">Satuan: {it.unit}</p>
+                  ) : null}
+                </td>
                 <td className="py-2.5 tabular-nums">{it.quantity}</td>
                 <td className="py-2.5 text-right tabular-nums">
                   {formatIdr(it.unit_price)}
@@ -107,6 +115,36 @@ export default async function InvoiceDetailPage({
             ))}
           </tbody>
         </table>
+        <div className="mt-4 space-y-1.5 border-t border-hairline pt-3 text-sm tabular-nums">
+          <div className="flex justify-between gap-4">
+            <span className="text-mid-gray">Subtotal</span>
+            <span>{formatIdr(Number(inv.subtotal))}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-mid-gray">Diskon</span>
+            <span>{formatIdr(Number(inv.discount_amount))}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-mid-gray">Pajak</span>
+            <span>{formatIdr(Number(inv.tax_amount))}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-mid-gray">Biaya lain</span>
+            <span>{formatIdr(Number(inv.additional_fee))}</span>
+          </div>
+          <div className="flex justify-between gap-4 font-semibold">
+            <span>Total</span>
+            <span>{formatIdr(Number(inv.total_amount))}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-mid-gray">Terbayar</span>
+            <span>{formatIdr(Number(inv.amount_paid))}</span>
+          </div>
+          <div className="flex justify-between gap-4 border-t border-hairline pt-2 font-semibold">
+            <span>Sisa</span>
+            <span>{formatIdr(Number(inv.balance_due))}</span>
+          </div>
+        </div>
       </Card>
 
       {String(inv.status) !== "DRAFT" ? (

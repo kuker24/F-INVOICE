@@ -26,7 +26,7 @@ export async function listProducts(profile: Profile, q?: string) {
   let query = supabase
     .from("products")
     .select(
-      "id,code,name,category,default_price,unit,billing_type,default_tax_rate,status,created_at,updated_at,deleted_at,owner_id",
+      "id,code,name,description,category,default_price,unit,billing_type,default_tax_rate,status,created_at,updated_at,deleted_at,owner_id",
     )
     .is("deleted_at", null)
     .order("name");

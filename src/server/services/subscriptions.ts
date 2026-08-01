@@ -244,21 +244,60 @@ export async function generateSubscriptionInvoice(
     paymentMethodId = (defPm?.id as string) ?? null;
   }
 
-  let itemName = subscription.name;
+  // Line item must be product/service — never the customer name.
+  let itemName = subscription.name?.trim() || "Langganan";
   let itemDescription =
-    subscription.description ??
+    subscription.description?.trim() ||
     `Langganan ${subscription.billing_cycle} · ${periodStart} s/d ${periodEnd}`;
+  let itemUnit: string | null = null;
+  let taxRate = 0;
+  let productId = subscription.product_id;
+
   if (subscription.product_id) {
     const { data: product } = await admin
       .from("products")
-      .select("name,description")
+      .select("id,name,description,unit,default_tax_rate")
       .eq("id", subscription.product_id)
       .maybeSingle();
     if (product?.name) {
       itemName = product.name as string;
       itemDescription =
-        (product.description as string | null) ??
-        `${subscription.name} · ${periodStart} s/d ${periodEnd}`;
+        (subscription.description as string | null)?.trim() ||
+        (product.description as string | null)?.trim() ||
+        `Periode ${periodStart} s/d ${periodEnd}`;
+      itemUnit = (product.unit as string | null) ?? null;
+      taxRate = Number(product.default_tax_rate ?? 0) || 0;
+      productId = product.id as string;
+    }
+  } else {
+    // Heuristic: if sub name equals customer name, try match product by price
+    const { data: customer } = await admin
+      .from("customers")
+      .select("name")
+      .eq("id", subscription.customer_id)
+      .maybeSingle();
+    if (
+      customer?.name &&
+      itemName.toLowerCase() === String(customer.name).toLowerCase()
+    ) {
+      const { data: byPrice } = await admin
+        .from("products")
+        .select("id,name,description,unit,default_tax_rate")
+        .eq("owner_id", subscription.owner_id)
+        .eq("default_price", subscription.price)
+        .eq("status", "ACTIVE")
+        .is("deleted_at", null)
+        .limit(2);
+      if (byPrice?.length === 1) {
+        const product = byPrice[0];
+        itemName = product.name as string;
+        itemDescription =
+          (product.description as string | null)?.trim() ||
+          `Periode ${periodStart} s/d ${periodEnd}`;
+        itemUnit = (product.unit as string | null) ?? null;
+        taxRate = Number(product.default_tax_rate ?? 0) || 0;
+        productId = product.id as string;
+      }
     }
   }
 
@@ -271,13 +310,14 @@ export async function generateSubscriptionInvoice(
     payment_method_id: paymentMethodId,
     items: [
       {
-        product_id: subscription.product_id,
+        product_id: productId,
         name: itemName,
         description: itemDescription,
         quantity: 1,
+        unit: itemUnit ?? undefined,
         unit_price: subscription.price,
         discount_amount: 0,
-        tax_rate: 0,
+        tax_rate: taxRate,
       },
     ],
     subscription_id: subscription.id,

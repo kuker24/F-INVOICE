@@ -8,10 +8,12 @@ import { DataTable, Td, Th, Tr } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InviteUserForm } from "@/components/forms/invite-user-form";
 import { UserStatusButtons } from "@/components/users/status-buttons";
+import { SetPasswordButton } from "@/components/users/set-password-button";
 
 export default async function UsersPage() {
   const session = await getSessionProfile();
   if (!session) redirect("/login");
+  const isDev = session.profile.role === "DEVELOPER";
   const [rows, customers] = await Promise.all([
     listUsers(session.profile),
     listCustomers(session.profile),
@@ -21,13 +23,13 @@ export default async function UsersPage() {
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Pengguna</h1>
         <p className="text-sm text-mid-gray">
-          {rows.length} akun · undang staff atau portal pelanggan
+          {rows.length} akun · buat staff/admin atau portal pelanggan + password
         </p>
       </div>
       <Card>
-        <CardTitle className="mb-4">Undang user</CardTitle>
+        <CardTitle className="mb-4">Buat user</CardTitle>
         <InviteUserForm
-          canInviteAdmin={session.profile.role === "DEVELOPER"}
+          canInviteAdmin={isDev}
           customers={customers.map((c) => ({
             id: c.id,
             name: c.name,
@@ -39,7 +41,7 @@ export default async function UsersPage() {
         {!rows.length ? (
           <EmptyState
             title="Belum ada pengguna"
-            description="Undang admin atau pelanggan lewat form di atas."
+            description="Buat admin atau pelanggan lewat form di atas."
           />
         ) : (
           <DataTable>
@@ -65,10 +67,15 @@ export default async function UsersPage() {
                   </Td>
                   <Td>
                     {r.role !== "DEVELOPER" ? (
-                      <UserStatusButtons
-                        id={String(r.id)}
-                        status={String(r.status)}
-                      />
+                      <div className="flex flex-wrap items-start gap-2">
+                        <UserStatusButtons
+                          id={String(r.id)}
+                          status={String(r.status)}
+                        />
+                        {isDev ? (
+                          <SetPasswordButton id={String(r.id)} />
+                        ) : null}
+                      </div>
                     ) : (
                       <span className="text-xs text-mid-gray">—</span>
                     )}

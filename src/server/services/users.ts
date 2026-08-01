@@ -6,7 +6,6 @@ import { ownerIdOf } from "@/lib/auth/owner";
 import { assertStaff } from "@/lib/permissions/assert";
 import { AppError } from "@/server/errors";
 import { logActivity } from "@/server/services/activity";
-import { getPublicEnv } from "@/config/public-env";
 
 export async function listUsers(profile: Profile) {
   assertStaff(profile);
@@ -32,6 +31,7 @@ export async function inviteUser(
     email: string;
     full_name: string;
     role: "ADMIN" | "USER";
+    password: string;
     customer_id?: string | null;
     phone?: string | null;
   },
@@ -41,48 +41,47 @@ export async function inviteUser(
     throw new AppError("FORBIDDEN", "Admin hanya invite USER.");
   }
   if (input.role === "USER" && !input.customer_id) {
-    throw new AppError("CUSTOMER_REQUIRED", "USER butuh customer_id.");
+    throw new AppError(
+      "CUSTOMER_REQUIRED",
+      "USER butuh customer. Buat pelanggan dulu di menu Pelanggan.",
+    );
+  }
+  if (!input.password || input.password.length < 8) {
+    throw new AppError("VALIDATION_ERROR", "Password minimal 8 karakter.");
   }
   const ownerId = ownerIdOf(profile);
   const admin = createAdminClient();
-  const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL;
+  const email = input.email.toLowerCase().trim();
 
-  const { data: created, error: authErr } =
-    await admin.auth.admin.inviteUserByEmail(input.email, {
-      redirectTo: `${appUrl}/reset-password`,
-      data: { full_name: input.full_name },
-    });
-
-  // fallback createUser if invite not configured
-  let userId = created?.user?.id;
-  if (authErr || !userId) {
-    const { data: cu, error: cErr } = await admin.auth.admin.createUser({
-      email: input.email,
-      email_confirm: true,
-      password: crypto.randomUUID().slice(0, 16) + "Aa1!",
-      user_metadata: { full_name: input.full_name },
-    });
-    if (cErr || !cu.user) {
-      throw new AppError(
-        "INVITE_FAILED",
-        authErr?.message ?? cErr?.message ?? "Gagal invite.",
-      );
-    }
-    userId = cu.user.id;
+  // Create with known password so staff can hand credentials offline (no email SMTP required).
+  const { data: cu, error: cErr } = await admin.auth.admin.createUser({
+    email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: { full_name: input.full_name, role: input.role },
+  });
+  if (cErr || !cu.user) {
+    throw new AppError(
+      "INVITE_FAILED",
+      cErr?.message ?? "Gagal buat akun auth.",
+    );
   }
+  const userId = cu.user.id;
 
   const { error: pErr } = await admin.from("profiles").insert({
     id: userId,
-    full_name: input.full_name,
-    email: input.email.toLowerCase(),
+    full_name: input.full_name.trim(),
+    email,
     phone: input.phone ?? null,
     role: input.role as UserRole,
-    status: "INVITED",
+    status: "ACTIVE",
     customer_id: input.role === "USER" ? input.customer_id : null,
     owner_id: ownerId,
     created_by: profile.id,
   });
   if (pErr) {
+    // roll back auth user so re-try is clean
+    await admin.auth.admin.deleteUser(userId);
     throw new AppError("PROFILE_CREATE_FAILED", pErr.message);
   }
 
@@ -91,7 +90,51 @@ export async function inviteUser(
     action: "user.invite",
     entityType: "profile",
     entityId: userId,
-    description: `Invite ${input.email} as ${input.role}`,
+    description: `Buat ${email} sebagai ${input.role}`,
+  });
+}
+
+/** Developer/admin set password for an existing non-developer account. */
+export async function setUserPassword(
+  profile: Profile,
+  id: string,
+  password: string,
+) {
+  assertStaff(profile);
+  if (profile.role !== "DEVELOPER") {
+    throw new AppError("FORBIDDEN", "Hanya Developer yang set password user.");
+  }
+  if (!password || password.length < 8) {
+    throw new AppError("VALIDATION_ERROR", "Password minimal 8 karakter.");
+  }
+  if (id === profile.id) {
+    throw new AppError("SELF_PASSWORD", "Ganti password sendiri lewat reset email.");
+  }
+  const admin = createAdminClient();
+  const { data: target } = await admin
+    .from("profiles")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (!target) throw new AppError("NOT_FOUND", "User tidak ditemukan.");
+  if ((target as Profile).role === "DEVELOPER") {
+    throw new AppError("FORBIDDEN", "Tidak bisa ubah password Developer lain.");
+  }
+  const { error } = await admin.auth.admin.updateUserById(id, {
+    password,
+    email_confirm: true,
+  });
+  if (error) throw new AppError("PASSWORD_FAILED", error.message);
+  // Ensure they can log in after staff sets password
+  if ((target as Profile).status === "INVITED") {
+    await admin.from("profiles").update({ status: "ACTIVE" }).eq("id", id);
+  }
+  await logActivity({
+    profile,
+    action: "user.password_set",
+    entityType: "profile",
+    entityId: id,
+    description: `Password di-set staff untuk ${(target as Profile).email}`,
   });
 }
 

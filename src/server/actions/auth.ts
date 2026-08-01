@@ -12,6 +12,7 @@ import {
 import {
   forgotPasswordSchema,
   loginSchema,
+  setPasswordSchema,
 } from "@/lib/validation/auth";
 import { homePathForRole } from "@/lib/auth/profile";
 import type { Profile } from "@/types/database";
@@ -193,6 +194,59 @@ export async function forgotPasswordAction(
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${appUrl}/reset-password`,
   });
+
+  return { success: true, data: undefined };
+}
+
+export async function updatePasswordAction(
+  raw: unknown,
+): Promise<ActionResult> {
+  const parsed = setPasswordSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: parsed.error.issues[0]?.message ?? "Data tidak valid.",
+      },
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return {
+      success: false,
+      error: {
+        code: "UNAUTHORIZED",
+        message: "Sesi reset tidak valid. Buka ulang tautan dari email.",
+      },
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+  if (error) {
+    return {
+      success: false,
+      error: { code: "PASSWORD_FAILED", message: error.message },
+    };
+  }
+
+  // Activate invited accounts after they set a password via email link
+  try {
+    const admin = createAdminClient();
+    await admin
+      .from("profiles")
+      .update({ status: "ACTIVE" })
+      .eq("id", user.id)
+      .eq("status", "INVITED");
+  } catch {
+    /* non-fatal */
+  }
 
   return { success: true, data: undefined };
 }

@@ -13,9 +13,10 @@ async function requireSession() {
 }
 
 const inviteSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email("Email tidak valid."),
   full_name: z.string().min(1).max(200),
   role: z.enum(["ADMIN", "USER"]),
+  password: z.string().min(8, "Password minimal 8 karakter."),
   customer_id: z.string().uuid().optional().nullable(),
   phone: z.string().max(40).optional().nullable(),
 });
@@ -28,6 +29,31 @@ export async function inviteUserAction(raw: unknown): Promise<ActionResult> {
       return fail("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid");
     }
     await users.inviteUser(profile, parsed.data);
+    revalidatePath("/users");
+    return ok(undefined);
+  } catch (e) {
+    return toActionError(e);
+  }
+}
+
+const setPasswordSchema = z.object({
+  id: z.string().uuid(),
+  password: z.string().min(8, "Password minimal 8 karakter."),
+});
+
+export async function setUserPasswordAction(
+  raw: unknown,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireSession();
+    const parsed = setPasswordSchema.safeParse(raw);
+    if (!parsed.success) {
+      return fail(
+        "VALIDATION_ERROR",
+        parsed.error.issues[0]?.message ?? "Invalid",
+      );
+    }
+    await users.setUserPassword(profile, parsed.data.id, parsed.data.password);
     revalidatePath("/users");
     return ok(undefined);
   } catch (e) {

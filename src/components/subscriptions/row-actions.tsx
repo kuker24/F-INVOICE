@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { InlineError } from "@/components/ui/inline-error";
@@ -10,15 +11,21 @@ import {
   resumeSubscriptionAction,
 } from "@/server/actions/subscriptions";
 
+type GenData = {
+  invoiceId: string;
+  invoiceNumber?: string;
+  status?: string;
+  skipped?: boolean;
+};
+
 export function SubscriptionRowActions({ id, status }: { id: string; status: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [okMsg, setOkMsg] = useState<string | null>(null);
+  const [lastInvoice, setLastInvoice] = useState<GenData | null>(null);
 
   function go(fn: () => Promise<{ success: boolean; error?: { message: string }; data?: unknown }>) {
     setError(null);
-    setOkMsg(null);
     start(async () => {
       const res = await fn();
       if (!res.success) {
@@ -26,7 +33,7 @@ export function SubscriptionRowActions({ id, status }: { id: string; status: str
         return;
       }
       if (res.data && typeof res.data === "object" && "invoiceId" in (res.data as object)) {
-        setOkMsg("Invoice: " + (res.data as { invoiceId: string }).invoiceId);
+        setLastInvoice(res.data as GenData);
       }
       router.refresh();
     });
@@ -35,8 +42,18 @@ export function SubscriptionRowActions({ id, status }: { id: string; status: str
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap gap-1">
-        <Button size="sm" variant="outline" disabled={pending} onClick={() => go(() => generateSubscriptionInvoiceAction(id))}>
-          Buat invoice
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pending || status !== "ACTIVE"}
+          onClick={() => go(() => generateSubscriptionInvoiceAction(id))}
+          title={
+            status === "ACTIVE"
+              ? "Buat & kirim invoice ke portal pelanggan"
+              : "Hanya langganan ACTIVE"
+          }
+        >
+          Buat & kirim
         </Button>
         {status === "ACTIVE" ? (
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => go(() => pauseSubscriptionAction(id))}>
@@ -55,9 +72,16 @@ export function SubscriptionRowActions({ id, status }: { id: string; status: str
         ) : null}
       </div>
       <InlineError message={error} />
-      {okMsg ? (
+      {lastInvoice ? (
         <p className="text-xs text-mid-gray" role="status">
-          {okMsg}
+          {lastInvoice.skipped ? "Sudah ada: " : "Terkirim: "}
+          <Link
+            href={`/invoices/${lastInvoice.invoiceId}`}
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            {lastInvoice.invoiceNumber ?? lastInvoice.invoiceId.slice(0, 8)}
+          </Link>
+          {lastInvoice.status ? ` · ${lastInvoice.status}` : ""}
         </p>
       ) : null}
     </div>

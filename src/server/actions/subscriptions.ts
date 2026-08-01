@@ -64,12 +64,21 @@ export async function cancelSubscriptionAction(id: string): Promise<ActionResult
 
 export async function generateSubscriptionInvoiceAction(
   id: string,
-): Promise<ActionResult<{ invoiceId: string; skipped: boolean }>> {
+): Promise<
+  ActionResult<{
+    invoiceId: string;
+    invoiceNumber?: string;
+    status?: string;
+    skipped: boolean;
+  }>
+> {
   try {
     const profile = await staff();
     const r = await subs.generateSubscriptionInvoice(profile, id);
     revalidatePath("/subscriptions");
     revalidatePath("/invoices");
+    revalidatePath(`/invoices/${r.invoiceId}`);
+    revalidatePath("/portal/invoices");
     return ok(r);
   } catch (e) {
     return toActionError(e);

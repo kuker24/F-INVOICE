@@ -6,7 +6,7 @@ import { ownerIdOf } from "@/lib/auth/owner";
 import { assertStaff } from "@/lib/permissions/assert";
 import { AppError } from "@/server/errors";
 import { advanceBillingDate, addDays, todayInTz } from "@/lib/date/business";
-import { createInvoice } from "@/server/services/invoices";
+import { createInvoice, sendInvoice } from "@/server/services/invoices";
 import { ensureBusinessSettings } from "@/server/services/settings";
 import { logActivity, notifyUsers, staffUserIds } from "@/server/services/activity";
 import { sanitizeSearch } from "@/lib/search";
@@ -142,7 +142,28 @@ export async function updateSubscriptionStatus(
   return data as Subscription;
 }
 
-/** Core generate DRAFT invoice for one subscription period. Idempotent. */
+function systemActorForOwner(ownerId: string, createdBy?: string | null): Profile {
+  return {
+    id: ownerId,
+    role: "DEVELOPER",
+    status: "ACTIVE",
+    owner_id: null,
+    full_name: "System",
+    email: "system@local",
+    phone: null,
+    avatar_url: null,
+    customer_id: null,
+    last_login_at: null,
+    created_by: createdBy ?? null,
+    created_at: "",
+    updated_at: "",
+  } as Profile;
+}
+
+/**
+ * Generate invoice for the current subscription period, then auto-send (SENT)
+ * so the linked customer portal user can see and pay it. Idempotent per period.
+ */
 export async function generateSubscriptionInvoice(
   profile: Profile | null,
   subscriptionId: string,
@@ -160,7 +181,7 @@ export async function generateSubscriptionInvoice(
     throw new AppError("FORBIDDEN", "Di luar scope.");
   }
   if (!opts?.asSystem && profile) assertStaff(profile);
-  if (subscription.status !== "ACTIVE" && !profile) {
+  if (subscription.status !== "ACTIVE") {
     throw new AppError("NOT_ACTIVE", "Langganan tidak aktif.");
   }
 
@@ -171,40 +192,32 @@ export async function generateSubscriptionInvoice(
     subscription.custom_interval_days,
   );
 
-  // idempotent check
+  const actor = profile ?? systemActorForOwner(subscription.owner_id, subscription.created_by);
+
+  // idempotent check — if a period invoice already exists, ensure it is sent
   const { data: existing } = await admin
     .from("invoices")
-    .select("id")
+    .select("id,status,invoice_number")
     .eq("subscription_id", subscription.id)
     .eq("subscription_period_start", periodStart)
     .is("deleted_at", null)
     .maybeSingle();
   if (existing) {
-    return { invoiceId: existing.id as string, skipped: true };
-  }
-
-  const actor =
-    profile ??
-    ({
-      id: subscription.created_by ?? subscription.owner_id,
-      role: "DEVELOPER",
-      status: "ACTIVE",
-      owner_id: null,
-      full_name: "System",
-      email: "system@local",
-      phone: null,
-      avatar_url: null,
-      customer_id: null,
-      last_login_at: null,
-      created_by: null,
-      created_at: "",
-      updated_at: "",
-    } as Profile);
-
-  // ensure owner for createInvoice
-  if (!profile) {
-    actor.id = subscription.owner_id;
-    actor.role = "DEVELOPER";
+    if (existing.status === "DRAFT") {
+      const sent = await sendInvoice(actor, existing.id as string);
+      return {
+        invoiceId: sent.id,
+        invoiceNumber: sent.invoice_number,
+        status: sent.status,
+        skipped: false,
+      };
+    }
+    return {
+      invoiceId: existing.id as string,
+      invoiceNumber: existing.invoice_number as string,
+      status: existing.status as string,
+      skipped: true,
+    };
   }
 
   const inv = await createInvoice(actor, {
@@ -230,7 +243,10 @@ export async function generateSubscriptionInvoice(
     subscription_period_end: periodEnd,
   });
 
-  // bump next_invoice_date
+  // Deliver to customer portal (DRAFT is staff-only; portal hides DRAFT).
+  const sent = await sendInvoice(actor, inv.id);
+
+  // bump next_invoice_date only after successful create+send
   await admin
     .from("subscriptions")
     .update({ next_invoice_date: periodEnd })
@@ -242,10 +258,15 @@ export async function generateSubscriptionInvoice(
     action: "subscription.generate_invoice",
     entityType: "subscription",
     entityId: subscription.id,
-    description: `Generate DRAFT ${inv.invoice_number} for ${periodStart}`,
+    description: `Generate & kirim ${sent.invoice_number} for ${periodStart}`,
   });
 
-  return { invoiceId: inv.id, skipped: false };
+  return {
+    invoiceId: sent.id,
+    invoiceNumber: sent.invoice_number,
+    status: sent.status,
+    skipped: false,
+  };
 }
 
 export async function runSubscriptionCron(limit = 50) {
@@ -279,10 +300,10 @@ export async function runSubscriptionCron(limit = 50) {
         await notifyUsers({
           userIds: staff,
           type: "SUBSCRIPTION_INVOICE",
-          title: "Invoice langganan DRAFT",
-          message: `Langganan ${row.name} menghasilkan invoice draft.`,
-          targetType: "subscription",
-          targetId: row.id as string,
+          title: "Invoice langganan dikirim",
+          message: `Langganan ${row.name}: ${r.invoiceNumber ?? r.invoiceId} (${r.status ?? "SENT"}).`,
+          targetType: "invoice",
+          targetId: r.invoiceId,
         });
       }
     } catch (e) {

@@ -62,7 +62,7 @@ export default async function SubscriptionsPage({
             description={
               q || status
                 ? "Ubah filter atau reset."
-                : "Buat langganan berulang; cron akan generate invoice draft."
+                : "Buat langganan berulang; cron membuat & mengirim invoice ke pelanggan."
             }
             actionHref={q || status ? undefined : "/subscriptions/new"}
             actionLabel={q || status ? undefined : "+ Langganan"}

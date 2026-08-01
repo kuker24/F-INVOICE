@@ -128,10 +128,6 @@ export function LoginForm() {
           "Masuk"
         )}
       </Button>
-
-      <p className="text-center text-xs text-mid-gray">
-        Akun dibuat oleh Developer. Registrasi publik tidak tersedia.
-      </p>
     </form>
   );
 }

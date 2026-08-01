@@ -13,6 +13,9 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "F-INVOICE",
   description: "Private invoice management system",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 /** Run serverless near SEA users (was iad1 → multi-second RTT). */
